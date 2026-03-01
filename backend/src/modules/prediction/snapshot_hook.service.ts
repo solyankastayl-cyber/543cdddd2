@@ -273,6 +273,7 @@ export async function snapshotHook(payload: SnapshotPayload): Promise<SnapshotHo
 
 /**
  * Extract snapshot payload from DXY terminal pack
+ * Builds FULL model series: [historical] → anchor → [forecast]
  */
 export function extractDxySnapshotPayload(
   terminalPack: any,
@@ -281,12 +282,13 @@ export function extractDxySnapshotPayload(
   try {
     const hybrid = terminalPack?.hybrid;
     const core = terminalPack?.core;
+    const replay = terminalPack?.replay;
     
     if (!hybrid?.path) return null;
     
     // Get current price from core.current.price
-    const lastPrice = core?.current?.price || core?.lastPrice || 0;
-    if (lastPrice === 0) return null;
+    const asOfPrice = core?.current?.price || core?.lastPrice || 0;
+    if (asOfPrice === 0) return null;
     
     // Convert focus to horizonDays
     const horizonMap: Record<string, number> = {
@@ -294,20 +296,78 @@ export function extractDxySnapshotPayload(
     };
     const horizonDays = horizonMap[focus] || 30;
     
-    // Build series from hybrid path
-    const series: PredictionPoint[] = hybrid.path.map((p: any) => ({
-      t: p.date || p.t,
-      v: p.value || p.v || p.price
-    })).filter((p: PredictionPoint) => p.t && isFinite(p.v));
+    const asOfDate = new Date();
+    const asOfDateStr = asOfDate.toISOString().split('T')[0];
     
-    if (series.length < 5) return null;
+    // ═══════════════════════════════════════════════════════════════
+    // BUILD FULL MODEL SERIES: [historical] → anchor → [forecast]
+    // ═══════════════════════════════════════════════════════════════
     
-    // Derive stance from forecast/synthetic
-    const forecast = hybrid.forecast || terminalPack?.synthetic?.forecast;
-    const medianReturn = forecast?.median || hybrid.breakdown?.median || 0;
+    const series: PredictionPoint[] = [];
+    
+    // 1) HISTORICAL PART - from replay.window (historical model fit)
+    const replayWindow = replay?.window;
+    if (replayWindow && Array.isArray(replayWindow)) {
+      // Take last N days of historical data (matching horizon)
+      const historyDays = Math.min(replayWindow.length, horizonDays);
+      const startIdx = replayWindow.length - historyDays;
+      
+      for (let i = startIdx; i < replayWindow.length; i++) {
+        const p = replayWindow[i];
+        const dateStr = p.date || p.t;
+        
+        // Don't include dates >= asOf
+        if (dateStr && dateStr < asOfDateStr) {
+          series.push({
+            t: dateStr,
+            v: p.value || p.v
+          });
+        }
+      }
+    }
+    
+    // 2) ANCHOR POINT - asOf with current price
+    series.push({
+      t: asOfDateStr,
+      v: asOfPrice
+    });
+    
+    // 3) FORECAST PART - from hybrid.path
+    for (const p of hybrid.path) {
+      const dateStr = p.date || p.t;
+      
+      // Only include future dates (after asOf)
+      if (dateStr && dateStr > asOfDateStr) {
+        series.push({
+          t: dateStr,
+          v: p.value || p.v
+        });
+      }
+    }
+    
+    // Filter and sort
+    const validSeries = series
+      .filter((p: PredictionPoint) => p.t && isFinite(p.v))
+      .sort((a, b) => a.t.localeCompare(b.t));
+    
+    if (validSeries.length < 10) return null;
+    
+    // ═══════════════════════════════════════════════════════════════
+    // DERIVE STANCE FROM FORECAST DIRECTION
+    // ═══════════════════════════════════════════════════════════════
+    
+    const anchorIdx = validSeries.findIndex(p => p.t === asOfDateStr);
+    const forecastPart = validSeries.slice(anchorIdx);
+    
     let stance: Stance = 'HOLD';
-    if (medianReturn > 0.02) stance = 'BULLISH';
-    else if (medianReturn < -0.02) stance = 'BEARISH';
+    if (forecastPart.length > 1) {
+      const firstVal = forecastPart[0].v;
+      const lastVal = forecastPart[forecastPart.length - 1].v;
+      const returnPct = (lastVal - firstVal) / firstVal;
+      
+      if (returnPct > 0.02) stance = 'BULLISH';
+      else if (returnPct < -0.02) stance = 'BEARISH';
+    }
     
     // Get confidence from meta
     const confidence = terminalPack?.meta?.confidence || hybrid.confidence || 0.5;
@@ -316,9 +376,9 @@ export function extractDxySnapshotPayload(
       asset: 'DXY',
       view: 'hybrid',
       horizonDays,
-      asOf: new Date().toISOString(),
-      asOfPrice: lastPrice,
-      series,
+      asOf: asOfDate.toISOString(),
+      asOfPrice,
+      series: validSeries,
       stance,
       confidence,
       modelVersion: 'v3.1.0',
