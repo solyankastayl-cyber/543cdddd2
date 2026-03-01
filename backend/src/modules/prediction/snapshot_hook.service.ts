@@ -314,7 +314,12 @@ export function extractDxySnapshotPayload(
       
       for (let i = startIdx; i < replayWindow.length; i++) {
         const p = replayWindow[i];
-        const dateStr = p.date || p.t;
+        let dateStr = p.date || p.t;
+        
+        // Convert ISO date (2024-09-04T00:00:00.000Z) to YYYY-MM-DD
+        if (dateStr && typeof dateStr === 'string' && dateStr.includes('T')) {
+          dateStr = dateStr.split('T')[0];
+        }
         
         // Don't include dates >= asOf
         if (dateStr && dateStr < asOfDateStr) {
