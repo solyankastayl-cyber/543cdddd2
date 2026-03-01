@@ -32,7 +32,7 @@ FRED API Key: 2c0bf55cfd182a3a4d2e4fd017a622f7
 
 ## What's Been Implemented
 
-### 2026-03-01
+### 2026-03-01 (Initial Deployment)
 - [x] Клонирован и развёрнут репозиторий
 - [x] Настроены .env файлы (FRED_API_KEY, MONGO_URL)
 - [x] Установлены все зависимости (npm, yarn)
@@ -51,6 +51,24 @@ FRED API Key: 2c0bf55cfd182a3a4d2e4fd017a622f7
   - `/fractal/dxy` - DXY Fractal (BEARISH USD -5.77%)
   - `/overview` - Market Overview
   - `/admin` - Admin Panel (login)
+
+### 2026-03-01 (Overview Refactor)
+- [x] **LivePredictionChart** — новый компонент с lightweight-charts v5
+  - OHLC свечи (реальные, не линия)
+  - 65vh высота, full-width
+  - zoom/scroll/crosshair
+  - NO vertical NOW line
+- [x] **Overview Page** полностью переделан:
+  - Asset switcher вверху (SPX/BTC/DXY)
+  - Horizon switcher (7/14/30/90/180/365d)
+  - Большой график как главный элемент
+  - Verdict block под графиком
+  - Drivers/Risks compact grid
+  - Signal Stack collapsible
+- [x] **Prediction Overlay**:
+  - Active prediction — solid line
+  - Archived predictions — gray dashed, trimmed by next.asOf
+  - History toggle button
 
 ### Snapshot Hook Implementation Status
 - [x] `snapshot_hook.service.ts` - полностью реализован
