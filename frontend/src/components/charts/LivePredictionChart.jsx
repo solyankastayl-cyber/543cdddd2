@@ -13,7 +13,7 @@
  */
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { createChart, CrosshairMode } from 'lightweight-charts';
+import { createChart, CrosshairMode, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts';
 import { Eye, EyeOff, RefreshCw, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
