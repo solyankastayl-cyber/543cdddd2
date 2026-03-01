@@ -312,11 +312,16 @@ export function extractDxySnapshotPayload(
     
     // 1) HISTORICAL PART - from replay.window (historical model fit)
     const replayWindow = replay?.window;
+    console.log('[ExtractDxy] replayWindow length:', replayWindow?.length || 0);
+    
     if (replayWindow && Array.isArray(replayWindow)) {
       // Take last N days of historical data (matching horizon)
       const historyDays = Math.min(replayWindow.length, horizonDays);
       const startIdx = replayWindow.length - historyDays;
       
+      console.log('[ExtractDxy] historyDays:', historyDays, 'startIdx:', startIdx, 'asOfDateStr:', asOfDateStr);
+      
+      let historicalCount = 0;
       for (let i = startIdx; i < replayWindow.length; i++) {
         const p = replayWindow[i];
         let dateStr = p.date || p.t;
@@ -326,14 +331,21 @@ export function extractDxySnapshotPayload(
           dateStr = dateStr.split('T')[0];
         }
         
+        // Log first few
+        if (i < startIdx + 3) {
+          console.log(`[ExtractDxy] historical[${i}]: dateStr=${dateStr}, compare=${dateStr < asOfDateStr}`);
+        }
+        
         // Don't include dates >= asOf
         if (dateStr && dateStr < asOfDateStr) {
           series.push({
             t: dateStr,
             v: p.value || p.v
           });
+          historicalCount++;
         }
       }
+      console.log('[ExtractDxy] Added historical points:', historicalCount);
     }
     
     // 2) ANCHOR POINT - asOf with current price
