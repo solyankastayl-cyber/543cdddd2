@@ -52,7 +52,7 @@ FRED API Key: 2c0bf55cfd182a3a4d2e4fd017a622f7
   - `/overview` - Market Overview
   - `/admin` - Admin Panel (login)
 
-### 2026-03-01 (Overview Refactor)
+### 2026-03-01 (Overview Refactor + Prediction Wiring Fix)
 - [x] **LivePredictionChart** — новый компонент с lightweight-charts v5
   - OHLC свечи (реальные, не линия)
   - 65vh высота, full-width
@@ -69,6 +69,13 @@ FRED API Key: 2c0bf55cfd182a3a4d2e4fd017a622f7
   - Active prediction — solid line
   - Archived predictions — gray dashed, trimmed by next.asOf
   - History toggle button
+- [x] **Snapshot Hook Fixes**:
+  - extractSpxSnapshotPayload - теперь парсит focusPack.forecast.path
+  - extractBtcSnapshotPayload - теперь парсит focusPack.forecast.path
+  - Series формат: {t: 'YYYY-MM-DD', v: number}
+- [x] **Candles API Fix**:
+  - Фронт теперь использует asset param вместо symbol
+  - ISO даты конвертируются в YYYY-MM-DD для lightweight-charts
 
 ### Snapshot Hook Implementation Status
 - [x] `snapshot_hook.service.ts` - полностью реализован
