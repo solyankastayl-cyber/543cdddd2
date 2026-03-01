@@ -339,7 +339,12 @@ export function extractDxySnapshotPayload(
     
     // 3) FORECAST PART - from hybrid.path
     for (const p of hybrid.path) {
-      const dateStr = p.date || p.t;
+      let dateStr = p.date || p.t;
+      
+      // Convert ISO date to YYYY-MM-DD
+      if (dateStr && typeof dateStr === 'string' && dateStr.includes('T')) {
+        dateStr = dateStr.split('T')[0];
+      }
       
       // Only include future dates (after asOf)
       if (dateStr && dateStr > asOfDateStr) {
