@@ -326,9 +326,22 @@ export function extractDxySnapshotPayload(
         const p = replayWindow[i];
         let dateStr = p.date || p.t;
         
-        // Convert ISO date (2024-09-04T00:00:00.000Z) to YYYY-MM-DD
-        if (dateStr && typeof dateStr === 'string' && dateStr.includes('T')) {
-          dateStr = dateStr.split('T')[0];
+        // Convert various date formats to YYYY-MM-DD
+        if (dateStr) {
+          if (typeof dateStr === 'string') {
+            if (dateStr.includes('T')) {
+              // ISO format: 2024-09-04T00:00:00.000Z
+              dateStr = dateStr.split('T')[0];
+            } else if (dateStr.includes('GMT') || dateStr.includes('UTC')) {
+              // Date string format: Thu Oct 09 2025 00:00:00 GMT+0000
+              const d = new Date(dateStr);
+              dateStr = d.toISOString().split('T')[0];
+            }
+          } else if (typeof dateStr === 'number') {
+            // Unix timestamp
+            const d = new Date(dateStr);
+            dateStr = d.toISOString().split('T')[0];
+          }
         }
         
         // Log first few
