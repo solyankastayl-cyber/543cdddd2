@@ -404,10 +404,11 @@ export function extractBtcSnapshotPayload(
   focus: string
 ): SnapshotPayload | null {
   try {
-    const projection = terminalPack?.projection || terminalPack?.summary?.projection;
-    const price = terminalPack?.price || terminalPack?.currentPrice;
+    // BTC focus-pack wraps data in 'focusPack' key
+    const focusPack = terminalPack?.focusPack || terminalPack;
+    const forecast = focusPack?.forecast;
     
-    if (!projection) return null;
+    if (!forecast?.path || forecast.path.length < 5) return null;
     
     // Convert focus to days
     const horizonMap: Record<string, number> = {
@@ -415,26 +416,35 @@ export function extractBtcSnapshotPayload(
     };
     const horizonDays = horizonMap[focus] || parseInt(focus) || 30;
     
-    // Build series from projection path
-    const path = projection.path || [];
-    const series: PredictionPoint[] = path.map((p: any) => ({
-      t: p.date || p.t,
-      v: p.value || p.v || p.price
-    })).filter((p: PredictionPoint) => p.t && isFinite(p.v));
+    // Build series - path is array of values, need to create dates
+    const startDate = forecast.startTs ? new Date(forecast.startTs) : new Date();
+    const series: PredictionPoint[] = forecast.path.map((value: number, idx: number) => {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + idx);
+      return {
+        t: d.toISOString().split('T')[0], // YYYY-MM-DD
+        v: value
+      };
+    }).filter((p: PredictionPoint) => p.t && isFinite(p.v));
     
-    const asOfPrice = typeof price === 'number' ? price : price?.last || 95000;
+    if (series.length < 5) return null;
     
-    // Derive stance
-    const medianReturn = projection.median || 0;
+    const asOfPrice = forecast.currentPrice || 95000;
+    
+    // Derive stance from first vs last
+    const firstVal = series[0].v;
+    const lastVal = series[series.length - 1].v;
+    const returnPct = (lastVal - firstVal) / firstVal;
+    
     let stance: Stance = 'HOLD';
-    if (medianReturn > 0.03) stance = 'BULLISH';
-    else if (medianReturn < -0.03) stance = 'BEARISH';
+    if (returnPct > 0.03) stance = 'BULLISH';
+    else if (returnPct < -0.03) stance = 'BEARISH';
     
-    const confidence = terminalPack?.confidence || projection.confidence || 0.5;
+    const confidence = focusPack?.diagnostics?.qualityScore || 0.5;
     
     return {
       asset: 'BTC',
-      view: 'crossAsset',
+      view: 'hybrid',
       horizonDays,
       asOf: new Date().toISOString(),
       asOfPrice,
@@ -445,6 +455,7 @@ export function extractBtcSnapshotPayload(
       sourceEndpoint: '/api/fractal/v2.1/focus-pack'
     };
   } catch (e) {
+    console.error('[ExtractBtc] Error:', e);
     return null;
   }
 }
