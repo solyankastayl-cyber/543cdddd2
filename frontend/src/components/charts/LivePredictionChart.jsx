@@ -28,10 +28,11 @@ function isoToUnixSeconds(iso) {
 
 function dateToUnix(dateStr) {
   // Handle both ISO and YYYY-MM-DD formats
+  // Return as string 'YYYY-MM-DD' for lightweight-charts
   if (dateStr.includes('T')) {
-    return isoToUnixSeconds(dateStr);
+    return dateStr.split('T')[0];
   }
-  return Math.floor(new Date(dateStr + 'T00:00:00Z').getTime() / 1000);
+  return dateStr;
 }
 
 function mapSeries(series) {
@@ -42,12 +43,12 @@ function mapSeries(series) {
       value: p.v
     }))
     .filter(p => p.time && isFinite(p.value))
-    .sort((a, b) => a.time - b.time);
+    .sort((a, b) => a.time.localeCompare(b.time));
 }
 
 function trimByNextAsOf(points, nextAsOfIso) {
   if (!nextAsOfIso || !points.length) return points;
-  const cutoff = isoToUnixSeconds(nextAsOfIso);
+  const cutoff = dateToUnix(nextAsOfIso);
   return points.filter(p => p.time <= cutoff);
 }
 
