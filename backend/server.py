@@ -38,6 +38,10 @@ async def start_ts_backend():
     env = os.environ.copy()
     env["PORT"] = "8002"
     
+    # Ensure log directory exists
+    import os as os_module
+    os_module.makedirs("/var/log/supervisor", exist_ok=True)
+    
     ts_process = subprocess.Popen(
         ["npx", "tsx", "src/app.fractal.ts"],
         cwd="/app/backend",
