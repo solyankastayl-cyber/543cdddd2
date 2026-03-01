@@ -297,8 +297,8 @@ export default function OverviewPage() {
     fetchData();
   }, [fetchData]);
   
-  // View mapping for prediction
-  const predictionView = asset === 'dxy' ? 'macro' : asset === 'spx' ? 'crossAsset' : 'hybrid';
+  // View mapping for prediction (must match what snapshot_hook saves)
+  const predictionView = asset === 'dxy' ? 'hybrid' : asset === 'spx' ? 'crossAsset' : 'hybrid';
   
   return (
     <div className="min-h-screen bg-gray-50" data-testid="overview-page">
