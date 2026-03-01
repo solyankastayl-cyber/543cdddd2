@@ -338,10 +338,12 @@ export function extractSpxSnapshotPayload(
   horizon: string
 ): SnapshotPayload | null {
   try {
-    const hybrid = terminalPack?.hybrid;
-    const summary = terminalPack?.summary;
+    // SPX focus-pack wraps data in 'data' key
+    const data = terminalPack?.data || terminalPack;
+    const forecast = data?.forecast;
+    const price = data?.price;
     
-    if (!hybrid?.path && !summary?.projection) return null;
+    if (!forecast?.path || forecast.path.length < 5) return null;
     
     // Convert horizon to days
     const horizonMap: Record<string, number> = {
@@ -349,23 +351,32 @@ export function extractSpxSnapshotPayload(
     };
     const horizonDays = horizonMap[horizon] || parseInt(horizon) || 30;
     
-    // Build series
-    const path = hybrid?.path || [];
-    const series: PredictionPoint[] = path.map((p: any) => ({
-      t: p.date || p.t,
-      v: p.value || p.v || p.price
-    })).filter((p: PredictionPoint) => p.t && isFinite(p.v));
+    // Build series - path is array of values, need to create dates
+    const startDate = forecast.startTs ? new Date(forecast.startTs) : new Date();
+    const series: PredictionPoint[] = forecast.path.map((value: number, idx: number) => {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + idx);
+      return {
+        t: d.toISOString().split('T')[0], // YYYY-MM-DD
+        v: value
+      };
+    }).filter((p: PredictionPoint) => p.t && isFinite(p.v));
+    
+    if (series.length < 5) return null;
     
     // Get current price
-    const asOfPrice = terminalPack?.price?.last || summary?.currentPrice || 6000;
+    const asOfPrice = price?.current || forecast.currentPrice || 6000;
     
-    // Derive stance
-    const projection = summary?.projection?.median || 0;
+    // Derive stance from first vs last
+    const firstVal = series[0].v;
+    const lastVal = series[series.length - 1].v;
+    const returnPct = (lastVal - firstVal) / firstVal;
+    
     let stance: Stance = 'HOLD';
-    if (projection > 0.02) stance = 'BULLISH';
-    else if (projection < -0.02) stance = 'BEARISH';
+    if (returnPct > 0.02) stance = 'BULLISH';
+    else if (returnPct < -0.02) stance = 'BEARISH';
     
-    const confidence = summary?.confidence || 0.5;
+    const confidence = data?.diagnostics?.qualityScore || 0.5;
     
     return {
       asset: 'SPX',
@@ -377,9 +388,10 @@ export function extractSpxSnapshotPayload(
       stance,
       confidence,
       modelVersion: 'v3.1.0',
-      sourceEndpoint: '/api/spx/v2.1/terminal'
+      sourceEndpoint: '/api/spx/v2.1/focus-pack'
     };
   } catch (e) {
+    console.error('[ExtractSpx] Error:', e);
     return null;
   }
 }
