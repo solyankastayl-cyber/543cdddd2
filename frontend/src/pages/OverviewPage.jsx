@@ -1,15 +1,15 @@
 /**
- * OVERVIEW PAGE — PRODUCTION VERSION
+ * OVERVIEW PAGE — Market Verdict with TradingView-like Chart
  * 
- * LAYOUT (top to bottom):
- * 1. Asset + Horizon Switchers (top bar)
- * 2. BIG CHART (70vh, full width) — главный элемент
- * 3. Verdict Block (stance + confidence + action)
- * 4. Drivers + Risks (compact grid)
- * 5. Signal Stack (collapsible)
- * 
- * Graph is the hero. Text is secondary.
- * NO vertical NOW line. NO small charts.
+ * LAYOUT:
+ * 1. Top Bar — Asset + Horizon Switchers
+ * 2. BIG CHART (65vh) — Hero element with candles + prediction
+ * 3. Verdict Banner — Stance, Confidence, Summary
+ * 4. Action Card + Reasons + Risks (3-column grid)
+ * 5. Signal Stack — Key indicators
+ * 6. Pipeline Summary — Signal transformation flow
+ * 7. Forecast by Horizon — Table
+ * 8. Meta Footer
  */
 
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
@@ -18,16 +18,17 @@ import {
   TrendingDown,
   Minus,
   AlertTriangle,
+  ArrowRight,
   Activity,
+  Clock,
+  Shield,
   Target,
   ChevronDown,
   ChevronUp,
   RefreshCw,
+  CheckCircle,
   XCircle,
-  Info,
-  Clock,
-  Shield,
-  CheckCircle
+  Info
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
@@ -36,19 +37,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 const LivePredictionChart = lazy(() => import('../components/charts/LivePredictionChart'));
 
 // ═══════════════════════════════════════════════════════════════
-// CONSTANTS
-// ═══════════════════════════════════════════════════════════════
-
-const ASSETS = [
-  { key: 'spx', label: 'S&P 500', icon: '📊' },
-  { key: 'btc', label: 'Bitcoin', icon: '₿' },
-  { key: 'dxy', label: 'Dollar', icon: '💵' }
-];
-
-const HORIZONS = [7, 14, 30, 90, 180, 365];
-
-// ═══════════════════════════════════════════════════════════════
-// HELPERS
+// HELPERS & COLORS
 // ═══════════════════════════════════════════════════════════════
 
 const getStanceColor = (stance) => {
@@ -59,23 +48,39 @@ const getStanceColor = (stance) => {
   }
 };
 
-const getStanceBg = (stance) => {
+const getStanceBgColor = (stance) => {
   switch (stance) {
-    case 'BULLISH': return 'bg-emerald-50 border-emerald-100';
-    case 'BEARISH': return 'bg-red-50 border-red-100';
-    default: return 'bg-gray-50 border-gray-100';
+    case 'BULLISH': return 'bg-emerald-50';
+    case 'BEARISH': return 'bg-red-50';
+    default: return 'bg-gray-50';
   }
 };
 
 const getStanceIcon = (stance) => {
   switch (stance) {
-    case 'BULLISH': return <TrendingUp className="w-6 h-6" />;
-    case 'BEARISH': return <TrendingDown className="w-6 h-6" />;
-    default: return <Minus className="w-6 h-6" />;
+    case 'BULLISH': return <TrendingUp className="w-5 h-5" />;
+    case 'BEARISH': return <TrendingDown className="w-5 h-5" />;
+    default: return <Minus className="w-5 h-5" />;
   }
 };
 
-const getActionText = (hint) => {
+const getSeverityColor = (severity) => {
+  switch (severity) {
+    case 'HIGH': return 'text-red-600 bg-red-50';
+    case 'MEDIUM': return 'text-amber-600 bg-amber-50';
+    default: return 'text-gray-600 bg-gray-50';
+  }
+};
+
+const getIndicatorStatusColor = (status) => {
+  switch (status) {
+    case 'GOOD': return 'bg-emerald-500';
+    case 'BAD': return 'bg-red-500';
+    default: return 'bg-gray-400';
+  }
+};
+
+const getActionHintText = (hint) => {
   switch (hint) {
     case 'INCREASE_RISK': return 'Increase Risk Exposure';
     case 'REDUCE_RISK': return 'Reduce Risk / Raise Cash';
@@ -85,182 +90,395 @@ const getActionText = (hint) => {
   }
 };
 
-const getSeverityStyle = (severity) => {
-  switch (severity) {
-    case 'HIGH': return 'text-red-700 bg-red-100';
-    case 'MEDIUM': return 'text-amber-700 bg-amber-100';
-    default: return 'text-gray-600 bg-gray-100';
+const getActionHintDescription = (hint) => {
+  switch (hint) {
+    case 'INCREASE_RISK': 
+      return 'Market conditions support risk. Consider gradually increasing exposure to growth assets.';
+    case 'REDUCE_RISK': 
+      return 'Defense mode recommended. Reduce position sizes and increase cash allocation.';
+    case 'HOLD_WAIT': 
+      return 'Signal strength is weak. Wait for clearer confirmation before acting.';
+    case 'HEDGE': 
+      return 'Elevated tail risk detected. Consider protective positions or hedges.';
+    default: 
+      return 'Maintain current allocation. Monitor for changes in market conditions.';
   }
 };
 
 // ═══════════════════════════════════════════════════════════════
-// VERDICT BLOCK (compact, under chart)
+// TOOLTIP COMPONENT
 // ═══════════════════════════════════════════════════════════════
 
-const VerdictBlock = ({ verdict, asset }) => {
-  if (!verdict) return null;
-  
-  const assetNames = { dxy: 'Dollar', spx: 'S&P 500', btc: 'Bitcoin' };
+const Tooltip = ({ children, content }) => {
+  const [show, setShow] = useState(false);
   
   return (
-    <div className={`p-5 rounded-xl border ${getStanceBg(verdict.stance)}`}>
+    <div className="relative inline-block">
+      <div
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+      >
+        {children}
+      </div>
+      {show && content && (
+        <div className="absolute z-50 w-64 p-3 text-sm bg-white border border-gray-200 rounded-lg shadow-lg -top-2 left-full ml-2">
+          {content}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════
+// COMPONENTS
+// ═══════════════════════════════════════════════════════════════
+
+// A) VERDICT BANNER — Market Verdict
+const VerdictBanner = ({ verdict, asset, horizon }) => {
+  if (!verdict) return null;
+  
+  const assetLabels = { dxy: 'Dollar Index', spx: 'S&P 500', btc: 'Bitcoin' };
+  
+  return (
+    <div className={`p-6 rounded-lg ${getStanceBgColor(verdict.stance)}`} data-testid="verdict-banner">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        {/* Left: Stance */}
         <div className="flex items-center gap-4">
-          <div className={`p-3 rounded-full ${verdict.stance === 'BULLISH' ? 'bg-emerald-100' : verdict.stance === 'BEARISH' ? 'bg-red-100' : 'bg-gray-200'}`}>
-            <span className={getStanceColor(verdict.stance)}>
-              {getStanceIcon(verdict.stance)}
-            </span>
+          <div className={`p-3 rounded-full ${verdict.stance === 'BULLISH' ? 'bg-emerald-100' : verdict.stance === 'BEARISH' ? 'bg-red-100' : 'bg-gray-100'}`}>
+            {getStanceIcon(verdict.stance)}
           </div>
           <div>
-            <div className="text-xs text-gray-500 uppercase tracking-wide">
-              {assetNames[asset]} Verdict
+            <div className="text-sm text-gray-500 uppercase tracking-wide">
+              {assetLabels[asset]} • {horizon}d Horizon
             </div>
-            <div className={`text-2xl font-bold ${getStanceColor(verdict.stance)}`}>
+            <div className={`text-3xl font-bold ${getStanceColor(verdict.stance)}`}>
               {verdict.stance}
             </div>
           </div>
         </div>
         
-        {/* Center: Confidence */}
-        <div className="text-center px-6 border-l border-r border-gray-200/50">
-          <div className="text-xs text-gray-500">Confidence</div>
-          <div className="text-xl font-bold text-gray-800">
+        <div className="text-right">
+          <Tooltip content="Model confidence based on signal clarity, data quality, and historical accuracy.">
+            <div className="text-sm text-gray-500 flex items-center gap-1 justify-end cursor-help">
+              Confidence <Info className="w-3 h-3" />
+            </div>
+          </Tooltip>
+          <div className="text-2xl font-semibold text-gray-800">
             {verdict.confidencePct}%
           </div>
         </div>
-        
-        {/* Right: Action */}
-        <div className="flex items-center gap-3">
-          <Target className="w-5 h-5 text-gray-400" />
-          <div>
-            <div className="text-xs text-gray-500">Action</div>
-            <div className={`font-semibold ${getStanceColor(verdict.stance)}`}>
-              {getActionText(verdict.actionHint)}
+      </div>
+      
+      <p className="mt-4 text-gray-700">
+        {verdict.summary}
+      </p>
+    </div>
+  );
+};
+
+// B) ACTION CARD — What to do
+const ActionCard = ({ verdict }) => {
+  if (!verdict) return null;
+  
+  return (
+    <div className="p-5 bg-white border border-gray-100 rounded-lg" data-testid="action-card">
+      <div className="flex items-center gap-2 mb-3">
+        <Target className="w-5 h-5 text-gray-400" />
+        <h3 className="font-semibold text-gray-800">What To Do</h3>
+      </div>
+      
+      <div className={`text-lg font-bold mb-2 ${getStanceColor(verdict.stance)}`}>
+        {getActionHintText(verdict.actionHint)}
+      </div>
+      
+      <p className="text-sm text-gray-600">
+        {getActionHintDescription(verdict.actionHint)}
+      </p>
+    </div>
+  );
+};
+
+// C) REASONS — Why this verdict
+const ReasonsSection = ({ reasons }) => {
+  if (!reasons || reasons.length === 0) return null;
+  
+  return (
+    <div className="p-5 bg-white border border-gray-100 rounded-lg" data-testid="reasons-section">
+      <div className="flex items-center gap-2 mb-4">
+        <Activity className="w-5 h-5 text-gray-400" />
+        <h3 className="font-semibold text-gray-800">Why This Verdict</h3>
+      </div>
+      
+      <div className="space-y-3">
+        {reasons.map((reason, idx) => (
+          <div key={idx} className="flex items-start gap-3">
+            <span className={`px-2 py-0.5 text-xs font-medium rounded ${getSeverityColor(reason.severity)}`}>
+              {reason.severity}
+            </span>
+            <div className="flex-1">
+              <div className="font-medium text-gray-800">{reason.title}</div>
+              <div className="text-sm text-gray-600">{reason.text}</div>
             </div>
           </div>
-        </div>
+        ))}
       </div>
-      
-      {verdict.summary && (
-        <p className="mt-4 text-sm text-gray-600">{verdict.summary}</p>
-      )}
     </div>
   );
 };
 
-// ═══════════════════════════════════════════════════════════════
-// DRIVERS & RISKS (compact grid)
-// ═══════════════════════════════════════════════════════════════
-
-const DriversRisksGrid = ({ reasons, risks }) => {
+// D) RISKS — What can break the scenario
+const RisksSection = ({ risks }) => {
+  if (!risks || risks.length === 0) {
+    return (
+      <div className="p-5 bg-white border border-gray-100 rounded-lg" data-testid="risks-section">
+        <div className="flex items-center gap-2 mb-4">
+          <AlertTriangle className="w-5 h-5 text-amber-500" />
+          <h3 className="font-semibold text-gray-800">Key Risks</h3>
+        </div>
+        <p className="text-sm text-gray-500">No significant risks identified</p>
+      </div>
+    );
+  }
+  
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {/* Drivers */}
-      <div className="p-4 bg-white rounded-xl border border-gray-100">
-        <div className="flex items-center gap-2 mb-3">
-          <Activity className="w-4 h-4 text-emerald-500" />
-          <h3 className="text-sm font-semibold text-gray-700">Key Drivers</h3>
-        </div>
-        {reasons && reasons.length > 0 ? (
-          <ul className="space-y-2">
-            {reasons.slice(0, 3).map((r, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm">
-                <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${getSeverityStyle(r.severity)}`}>
-                  {r.severity?.charAt(0) || 'M'}
-                </span>
-                <span className="text-gray-700">{r.title}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-gray-400">No drivers available</p>
-        )}
+    <div className="p-5 bg-white border border-gray-100 rounded-lg" data-testid="risks-section">
+      <div className="flex items-center gap-2 mb-4">
+        <AlertTriangle className="w-5 h-5 text-amber-500" />
+        <h3 className="font-semibold text-gray-800">Key Risks</h3>
       </div>
       
-      {/* Risks */}
-      <div className="p-4 bg-white rounded-xl border border-gray-100">
-        <div className="flex items-center gap-2 mb-3">
-          <AlertTriangle className="w-4 h-4 text-amber-500" />
-          <h3 className="text-sm font-semibold text-gray-700">Key Risks</h3>
-        </div>
-        {risks && risks.length > 0 ? (
-          <ul className="space-y-2">
-            {risks.slice(0, 3).map((r, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm">
-                <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${getSeverityStyle(r.severity)}`}>
-                  {r.severity?.charAt(0) || 'M'}
-                </span>
-                <span className="text-gray-700">{r.title}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-gray-400">No risks identified</p>
-        )}
+      <div className="space-y-3">
+        {risks.map((risk, idx) => (
+          <div key={idx} className="flex items-start gap-3">
+            <span className={`px-2 py-0.5 text-xs font-medium rounded ${getSeverityColor(risk.severity)}`}>
+              {risk.severity}
+            </span>
+            <div className="flex-1">
+              <div className="font-medium text-gray-800">{risk.title}</div>
+              <div className="text-sm text-gray-600">{risk.text}</div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 };
 
-// ═══════════════════════════════════════════════════════════════
-// SIGNAL STACK (collapsible)
-// ═══════════════════════════════════════════════════════════════
-
+// E) SIGNAL STACK — Key indicators
 const SignalStack = ({ indicators }) => {
   const [expanded, setExpanded] = useState(false);
   
   if (!indicators || indicators.length === 0) return null;
   
-  const visibleIndicators = expanded ? indicators : indicators.slice(0, 4);
+  const visibleIndicators = expanded ? indicators : indicators.slice(0, 9);
   
   return (
-    <div className="p-4 bg-white rounded-xl border border-gray-100">
+    <div className="p-5 bg-white border border-gray-100 rounded-lg" data-testid="signal-stack">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between mb-3"
+        className="w-full flex items-center justify-between mb-4"
       >
         <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4 text-gray-400" />
-          <h3 className="text-sm font-semibold text-gray-700">Signal Stack</h3>
+          <Activity className="w-5 h-5 text-gray-400" />
+          <h3 className="font-semibold text-gray-800">Signal Stack</h3>
           <span className="text-xs text-gray-400">({indicators.length} indicators)</span>
         </div>
-        {expanded ? (
-          <ChevronUp className="w-4 h-4 text-gray-400" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-gray-400" />
+        {indicators.length > 9 && (
+          expanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />
         )}
       </button>
       
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {visibleIndicators.map((ind, i) => (
-          <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-            <div className={`w-2 h-2 rounded-full ${
-              ind.status === 'GOOD' ? 'bg-emerald-500' :
-              ind.status === 'BAD' ? 'bg-red-500' : 'bg-gray-400'
-            }`} />
-            <div className="flex-1 min-w-0">
-              <div className="text-xs text-gray-500 truncate">{ind.name}</div>
-              <div className="text-sm font-medium text-gray-800">{ind.value}</div>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {visibleIndicators.map((ind, idx) => (
+          <Tooltip key={idx} content={ind.tooltip}>
+            <div className="p-3 bg-gray-50 rounded-lg cursor-help hover:bg-gray-100 transition-colors">
+              <div className="flex items-center gap-2 mb-1">
+                <div className={`w-2 h-2 rounded-full ${getIndicatorStatusColor(ind.status)}`} />
+                <span className="text-xs font-medium text-gray-500 uppercase">{ind.key}</span>
+              </div>
+              <div className="text-sm font-semibold text-gray-800">{ind.valueText}</div>
             </div>
-          </div>
+          </Tooltip>
         ))}
       </div>
+    </div>
+  );
+};
+
+// F) PIPELINE SUMMARY — Signal flow
+const PipelineSummary = ({ pipeline, asset }) => {
+  if (!pipeline) return null;
+  
+  const steps = [
+    { label: 'Indicators', value: `${Object.keys(pipeline.macroScore || {}).length > 0 ? '12' : '0'} series` },
+    { label: 'MacroScore', value: pipeline.macroScore?.score?.toFixed(2) || '0.00' },
+    { label: 'DXY Final', value: `${pipeline.dxyFinal?.projectionPct?.toFixed(1) || '0.0'}%` },
+  ];
+  
+  if (asset !== 'dxy' && pipeline.spxOverlay) {
+    steps.push({ label: 'SPX Overlay', value: `${pipeline.spxOverlay.projectionPct?.toFixed(1) || '0.0'}%` });
+  }
+  
+  if (asset === 'btc' && pipeline.btcOverlay) {
+    steps.push({ label: 'BTC Overlay', value: `${pipeline.btcOverlay.projectionPct?.toFixed(1) || '0.0'}%` });
+  }
+  
+  return (
+    <div className="p-4 bg-gray-50 rounded-lg" data-testid="pipeline-summary">
+      <div className="flex items-center gap-2 mb-3">
+        <ArrowRight className="w-4 h-4 text-gray-400" />
+        <span className="text-sm font-medium text-gray-600">Pipeline Flow</span>
+      </div>
       
-      {!expanded && indicators.length > 4 && (
-        <button
-          onClick={() => setExpanded(true)}
-          className="mt-3 text-xs text-gray-500 hover:text-gray-700"
-        >
-          Show {indicators.length - 4} more...
-        </button>
-      )}
+      <div className="flex items-center gap-2 overflow-x-auto">
+        {steps.map((step, idx) => (
+          <React.Fragment key={idx}>
+            <div className="flex-shrink-0 px-3 py-2 bg-white rounded border border-gray-200">
+              <div className="text-xs text-gray-400">{step.label}</div>
+              <div className="text-sm font-semibold text-gray-800">{step.value}</div>
+            </div>
+            {idx < steps.length - 1 && (
+              <ArrowRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// G) FORECAST BY HORIZON — Table
+const HorizonTable = ({ horizons }) => {
+  if (!horizons || horizons.length === 0) return null;
+  
+  return (
+    <div className="p-5 bg-white border border-gray-100 rounded-lg" data-testid="horizon-table">
+      <div className="flex items-center gap-2 mb-4">
+        <Clock className="w-5 h-5 text-gray-400" />
+        <h3 className="font-semibold text-gray-800">Forecast by Horizon</h3>
+      </div>
+      
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-gray-500 border-b border-gray-100">
+              <th className="pb-2 font-medium">Horizon</th>
+              <th className="pb-2 font-medium">Stance</th>
+              <th className="pb-2 font-medium">Median</th>
+              <th className="pb-2 font-medium">Range</th>
+              <th className="pb-2 font-medium">Confidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {horizons.map((h, idx) => (
+              <tr key={idx} className="border-b border-gray-50 last:border-0">
+                <td className="py-2 font-medium text-gray-800">
+                  {h.days === 'synthetic' ? 'Synthetic' : `${h.days}d`}
+                </td>
+                <td className={`py-2 font-semibold ${getStanceColor(h.stance)}`}>
+                  {h.stance}
+                </td>
+                <td className="py-2 text-gray-700">
+                  {h.medianProjectionPct >= 0 ? '+' : ''}{h.medianProjectionPct?.toFixed(1)}%
+                </td>
+                <td className="py-2 text-gray-500">
+                  [{h.rangeLowPct?.toFixed(1)}%, {h.rangeHighPct?.toFixed(1)}%]
+                </td>
+                <td className="py-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full ${h.confidencePct >= 70 ? 'bg-emerald-500' : h.confidencePct >= 50 ? 'bg-amber-500' : 'bg-gray-400'}`}
+                        style={{ width: `${h.confidencePct}%` }}
+                      />
+                    </div>
+                    <span className="text-gray-600">{h.confidencePct}%</span>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      
+      <div className="mt-3 p-3 bg-gray-50 rounded text-xs text-gray-500">
+        <strong>Synthetic</strong> = Aggregated signal across pattern structures. Not a separate market, but a weighted blend of historical analogs.
+      </div>
+    </div>
+  );
+};
+
+// H) META FOOTER
+const MetaFooter = ({ meta, latencyMs }) => {
+  if (!meta) return null;
+  
+  return (
+    <div className="flex items-center justify-between text-xs text-gray-400 pt-4 border-t border-gray-100" data-testid="meta-footer">
+      <div className="flex items-center gap-4">
+        <span>Version: {meta.systemVersion || 'v3.1'}</span>
+        <span>Data: {meta.dataMode || 'mongo'}</span>
+        <span className={meta.l5Grade === 'PRODUCTION' ? 'text-emerald-500' : 'text-amber-500'}>
+          L5: {meta.l5Grade || 'PRODUCTION'}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span>Latency: {latencyMs || 0}ms</span>
+        <span>Hash: {meta.inputsHash?.slice(0, 8) || 'n/a'}</span>
+      </div>
     </div>
   );
 };
 
 // ═══════════════════════════════════════════════════════════════
-// MAIN PAGE COMPONENT
+// LOADING SKELETON
+// ═══════════════════════════════════════════════════════════════
+
+const LoadingSkeleton = () => (
+  <div className="space-y-4 animate-pulse">
+    {/* Verdict Skeleton */}
+    <div className="p-6 bg-gray-100 rounded-lg">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+          <div>
+            <div className="w-32 h-3 bg-gray-200 rounded mb-2"></div>
+            <div className="w-24 h-8 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="w-20 h-3 bg-gray-200 rounded mb-2"></div>
+          <div className="w-12 h-6 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    </div>
+    
+    {/* 3-column grid skeleton */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {[1, 2, 3].map(i => (
+        <div key={i} className="p-5 bg-white border border-gray-100 rounded-lg">
+          <div className="w-24 h-4 bg-gray-200 rounded mb-3"></div>
+          <div className="w-full h-4 bg-gray-100 rounded mb-2"></div>
+          <div className="w-3/4 h-3 bg-gray-100 rounded"></div>
+        </div>
+      ))}
+    </div>
+    
+    {/* Signal stack skeleton */}
+    <div className="p-5 bg-white border border-gray-100 rounded-lg">
+      <div className="w-32 h-4 bg-gray-200 rounded mb-4"></div>
+      <div className="grid grid-cols-3 gap-3">
+        {[1, 2, 3, 4, 5, 6].map(i => (
+          <div key={i} className="p-3 bg-gray-50 rounded-lg">
+            <div className="w-16 h-3 bg-gray-200 rounded mb-2"></div>
+            <div className="w-12 h-4 bg-gray-200 rounded"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 
 export default function OverviewPage() {
@@ -271,7 +489,6 @@ export default function OverviewPage() {
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
   
-  // Fetch overview data
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -280,12 +497,12 @@ export default function OverviewPage() {
       const res = await fetch(`${API_URL}/api/ui/overview?asset=${asset}&horizon=${horizon}`);
       const json = await res.json();
       
-      if (json.ok) {
-        setData(json);
-        setLastUpdate(new Date());
-      } else {
-        setError(json.error || 'Failed to load data');
+      if (!json.ok) {
+        throw new Error(json.error || 'Failed to fetch overview');
       }
+      
+      setData(json);
+      setLastUpdate(new Date());
     } catch (e) {
       setError(e.message);
     } finally {
@@ -297,108 +514,114 @@ export default function OverviewPage() {
     fetchData();
   }, [fetchData]);
   
-  // View mapping for prediction (must match what snapshot_hook saves)
+  // Asset selector tabs
+  const assetTabs = [
+    { key: 'spx', label: 'S&P 500', icon: '📊' },
+    { key: 'btc', label: 'Bitcoin', icon: '₿' },
+    { key: 'dxy', label: 'Dollar', icon: '💵' },
+  ];
+  
+  // Horizon selector
+  const horizonOptions = [7, 14, 30, 90, 180, 365];
+  
+  // View mapping for prediction chart
   const predictionView = asset === 'dxy' ? 'hybrid' : asset === 'spx' ? 'crossAsset' : 'hybrid';
   
   return (
     <div className="min-h-screen bg-gray-50" data-testid="overview-page">
       {/* ═══════════════════════════════════════════════════════════
-          TOP BAR: Asset + Horizon Switchers + Price
+          TOP BAR: Title + Asset Tabs + Horizon + Refresh
           ═══════════════════════════════════════════════════════════ */}
       <div className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+        <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
-            {/* Left: Title + Asset Price (if available) */}
-            <div className="flex items-center gap-4">
-              <h1 className="text-lg font-bold text-gray-900">Market Overview</h1>
-              {data?.currentPrice && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xl font-semibold text-gray-800">
-                    ${data.currentPrice.toLocaleString()}
-                  </span>
-                  {data?.priceChange24h && (
-                    <span className={`text-sm font-medium ${
-                      data.priceChange24h >= 0 ? 'text-emerald-600' : 'text-red-500'
-                    }`}>
-                      {data.priceChange24h >= 0 ? '+' : ''}{data.priceChange24h.toFixed(2)}%
-                    </span>
-                  )}
-                </div>
-              )}
+            {/* Left: Title */}
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Market Overview</h1>
+              <p className="text-sm text-gray-500">One-screen verdict with actionable insights</p>
             </div>
             
-            {/* Center: Asset Switcher */}
-            <div className="flex items-center gap-2">
-              {ASSETS.map(a => (
+            {/* Center: Asset Tabs */}
+            <div className="flex bg-white border border-gray-200 rounded-lg p-1">
+              {assetTabs.map((tab) => (
                 <button
-                  key={a.key}
-                  onClick={() => setAsset(a.key)}
-                  data-testid={`asset-${a.key}`}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-                    asset === a.key
+                  key={tab.key}
+                  onClick={() => setAsset(tab.key)}
+                  data-testid={`asset-${tab.key}`}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    asset === tab.key
                       ? 'bg-gray-900 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'text-gray-600 hover:bg-gray-100'
                   }`}
                 >
-                  <span className="mr-1">{a.icon}</span>
-                  {a.label}
+                  <span className="mr-1">{tab.icon}</span>
+                  {tab.label}
                 </button>
               ))}
             </div>
             
-            {/* Right: Horizon Switcher + Refresh */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                {HORIZONS.map(h => (
-                  <button
-                    key={h}
-                    onClick={() => setHorizon(h)}
-                    data-testid={`horizon-${h}`}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                      horizon === h
-                        ? 'bg-emerald-500 text-white'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {h}d
-                  </button>
-                ))}
+            {/* Right: Horizon + Refresh */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">Horizon:</span>
+                <div className="flex bg-white border border-gray-200 rounded-lg p-1">
+                  {horizonOptions.map((h) => (
+                    <button
+                      key={h}
+                      onClick={() => setHorizon(h)}
+                      data-testid={`horizon-${h}`}
+                      className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                        horizon === h
+                          ? 'bg-emerald-500 text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      {h}d
+                    </button>
+                  ))}
+                </div>
               </div>
               
               <button
                 onClick={fetchData}
                 disabled={loading}
-                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 disabled:opacity-50"
-                title="Refresh"
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               </button>
             </div>
           </div>
+          
+          {lastUpdate && (
+            <div className="text-xs text-gray-400 mt-2">
+              Updated: {lastUpdate.toLocaleTimeString()}
+            </div>
+          )}
         </div>
       </div>
       
       {/* ═══════════════════════════════════════════════════════════
           MAIN CONTENT
           ═══════════════════════════════════════════════════════════ */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-6 py-6">
         
         {/* Error State */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-            <div className="flex items-center gap-2 text-red-700">
+          <div className="p-4 mb-6 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            <div className="flex items-center gap-2">
               <XCircle className="w-5 h-5" />
-              <span className="font-medium">Error: {error}</span>
+              <span className="font-medium">Error loading data</span>
             </div>
+            <p className="mt-1 text-sm">{error}</p>
           </div>
         )}
         
         {/* ═══════════════════════════════════════════════════════
-            1. MAIN CHART (70vh, full width) — THE HERO
+            1. BIG CHART — Hero Element (65vh)
             ═══════════════════════════════════════════════════════ */}
         <div className="mb-6">
           <Suspense fallback={
-            <div className="h-[65vh] bg-white rounded-2xl border border-gray-100 flex items-center justify-center">
+            <div className="h-[60vh] bg-white rounded-xl border border-gray-100 flex items-center justify-center">
               <RefreshCw className="w-8 h-8 text-gray-300 animate-spin" />
             </div>
           }>
@@ -410,87 +633,33 @@ export default function OverviewPage() {
           </Suspense>
         </div>
         
-        {/* Loading State for text blocks */}
-        {loading && !data && (
-          <div className="space-y-6">
-            {/* Verdict Skeleton */}
-            <div className="p-5 rounded-xl border bg-gray-50 border-gray-100 animate-pulse">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                  <div>
-                    <div className="w-20 h-3 bg-gray-200 rounded mb-2"></div>
-                    <div className="w-24 h-6 bg-gray-200 rounded"></div>
-                  </div>
-                </div>
-                <div className="text-center px-6">
-                  <div className="w-16 h-3 bg-gray-200 rounded mb-2 mx-auto"></div>
-                  <div className="w-12 h-6 bg-gray-200 rounded mx-auto"></div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 bg-gray-200 rounded"></div>
-                  <div>
-                    <div className="w-12 h-3 bg-gray-200 rounded mb-2"></div>
-                    <div className="w-32 h-4 bg-gray-200 rounded"></div>
-                  </div>
-                </div>
-              </div>
+        {/* Loading State */}
+        {loading && !data && <LoadingSkeleton />}
+        
+        {/* Main Content Blocks */}
+        {data && (
+          <div className="space-y-4">
+            {/* 2. Verdict Banner */}
+            <VerdictBanner verdict={data.verdict} asset={asset} horizon={horizon} />
+            
+            {/* 3. Action Card + Reasons + Risks (3-column) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <ActionCard verdict={data.verdict} />
+              <ReasonsSection reasons={data.reasons} />
+              <RisksSection risks={data.risks} />
             </div>
             
-            {/* Drivers/Risks Skeleton */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 bg-white rounded-xl border border-gray-100 animate-pulse">
-                <div className="w-24 h-4 bg-gray-200 rounded mb-3"></div>
-                <div className="space-y-2">
-                  <div className="w-full h-3 bg-gray-100 rounded"></div>
-                  <div className="w-3/4 h-3 bg-gray-100 rounded"></div>
-                </div>
-              </div>
-              <div className="p-4 bg-white rounded-xl border border-gray-100 animate-pulse">
-                <div className="w-20 h-4 bg-gray-200 rounded mb-3"></div>
-                <div className="space-y-2">
-                  <div className="w-full h-3 bg-gray-100 rounded"></div>
-                  <div className="w-2/3 h-3 bg-gray-100 rounded"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* ═══════════════════════════════════════════════════════
-            2. VERDICT BLOCK (under chart)
-            ═══════════════════════════════════════════════════════ */}
-        {data?.verdict && (
-          <div className="mb-6">
-            <VerdictBlock verdict={data.verdict} asset={asset} />
-          </div>
-        )}
-        
-        {/* ═══════════════════════════════════════════════════════
-            3. DRIVERS + RISKS (compact grid)
-            ═══════════════════════════════════════════════════════ */}
-        {data && (
-          <div className="mb-6">
-            <DriversRisksGrid reasons={data.reasons} risks={data.risks} />
-          </div>
-        )}
-        
-        {/* ═══════════════════════════════════════════════════════
-            4. SIGNAL STACK (collapsible)
-            ═══════════════════════════════════════════════════════ */}
-        {data?.indicators && (
-          <div className="mb-6">
+            {/* 4. Signal Stack */}
             <SignalStack indicators={data.indicators} />
-          </div>
-        )}
-        
-        {/* ═══════════════════════════════════════════════════════
-            FOOTER: Last Update
-            ═══════════════════════════════════════════════════════ */}
-        {lastUpdate && (
-          <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
-            <Clock className="w-3 h-3" />
-            <span>Last updated: {lastUpdate.toLocaleTimeString()}</span>
+            
+            {/* 5. Pipeline Summary */}
+            <PipelineSummary pipeline={data.pipeline} asset={asset} />
+            
+            {/* 6. Horizon Table */}
+            <HorizonTable horizons={data.horizons} />
+            
+            {/* 7. Meta Footer */}
+            <MetaFooter meta={data.meta} latencyMs={data.latencyMs} />
           </div>
         )}
       </div>
