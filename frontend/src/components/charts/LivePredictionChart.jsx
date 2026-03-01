@@ -97,13 +97,13 @@ export const LivePredictionChart = ({
       
       if (data.ok && data.candles) {
         return data.candles.map(c => ({
-          time: dateToUnix(c.t),
+          time: c.t, // Keep as YYYY-MM-DD string
           open: c.o,
           high: c.h,
           low: c.l,
           close: c.c,
           volume: c.v || 0
-        })).sort((a, b) => a.time - b.time);
+        })).sort((a, b) => a.time.localeCompare(b.time));
       }
       return [];
     } catch (e) {
