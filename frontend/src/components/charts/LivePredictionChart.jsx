@@ -479,22 +479,22 @@ export const LivePredictionChart = ({
           style={{ pointerEvents: 'none' }}
         >
           <div className="text-xs text-gray-500 mb-2">
-            {new Date(hoverData.time * 1000).toLocaleDateString()}
+            {typeof hoverData.time === 'string' ? hoverData.time : new Date(hoverData.time * 1000).toISOString().split('T')[0]}
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
             <span className="text-gray-400">O</span>
-            <span className="font-medium text-right">{hoverData.candle.open?.toLocaleString()}</span>
+            <span className="font-medium text-right">{hoverData.candle.open?.toLocaleString('en-US')}</span>
             <span className="text-gray-400">H</span>
-            <span className="font-medium text-right">{hoverData.candle.high?.toLocaleString()}</span>
+            <span className="font-medium text-right">{hoverData.candle.high?.toLocaleString('en-US')}</span>
             <span className="text-gray-400">L</span>
-            <span className="font-medium text-right">{hoverData.candle.low?.toLocaleString()}</span>
+            <span className="font-medium text-right">{hoverData.candle.low?.toLocaleString('en-US')}</span>
             <span className="text-gray-400">C</span>
-            <span className="font-medium text-right">{hoverData.candle.close?.toLocaleString()}</span>
+            <span className="font-medium text-right">{hoverData.candle.close?.toLocaleString('en-US')}</span>
           </div>
           {hoverData.prediction && (
             <div className="mt-2 pt-2 border-t border-gray-100">
               <span className="text-gray-400 text-xs">Prediction: </span>
-              <span className="font-medium text-xs">{hoverData.prediction.toLocaleString()}</span>
+              <span className="font-medium text-xs">{hoverData.prediction.toLocaleString('en-US')}</span>
             </div>
           )}
         </div>
