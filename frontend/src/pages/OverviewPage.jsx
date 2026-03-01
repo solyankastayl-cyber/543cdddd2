@@ -412,10 +412,47 @@ export default function OverviewPage() {
         
         {/* Loading State for text blocks */}
         {loading && !data && (
-          <div className="flex items-center justify-center py-12">
-            <div className="flex items-center gap-3 text-gray-400">
-              <RefreshCw className="w-5 h-5 animate-spin" />
-              <span>Loading verdict...</span>
+          <div className="space-y-6">
+            {/* Verdict Skeleton */}
+            <div className="p-5 rounded-xl border bg-gray-50 border-gray-100 animate-pulse">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                  <div>
+                    <div className="w-20 h-3 bg-gray-200 rounded mb-2"></div>
+                    <div className="w-24 h-6 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+                <div className="text-center px-6">
+                  <div className="w-16 h-3 bg-gray-200 rounded mb-2 mx-auto"></div>
+                  <div className="w-12 h-6 bg-gray-200 rounded mx-auto"></div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 bg-gray-200 rounded"></div>
+                  <div>
+                    <div className="w-12 h-3 bg-gray-200 rounded mb-2"></div>
+                    <div className="w-32 h-4 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Drivers/Risks Skeleton */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-white rounded-xl border border-gray-100 animate-pulse">
+                <div className="w-24 h-4 bg-gray-200 rounded mb-3"></div>
+                <div className="space-y-2">
+                  <div className="w-full h-3 bg-gray-100 rounded"></div>
+                  <div className="w-3/4 h-3 bg-gray-100 rounded"></div>
+                </div>
+              </div>
+              <div className="p-4 bg-white rounded-xl border border-gray-100 animate-pulse">
+                <div className="w-20 h-4 bg-gray-200 rounded mb-3"></div>
+                <div className="space-y-2">
+                  <div className="w-full h-3 bg-gray-100 rounded"></div>
+                  <div className="w-2/3 h-3 bg-gray-100 rounded"></div>
+                </div>
+              </div>
             </div>
           </div>
         )}
