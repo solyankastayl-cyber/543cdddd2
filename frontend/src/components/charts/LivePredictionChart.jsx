@@ -89,7 +89,8 @@ export const LivePredictionChart = ({
   // Fetch candles
   const fetchCandles = useCallback(async () => {
     const historyDays = HORIZON_HISTORY[horizonDays] || 365;
-    const url = `${API_URL}/api/market/candles?symbol=${asset}&interval=1d&limit=${historyDays}`;
+    // Use 'asset' param (not 'symbol') to match backend API
+    const url = `${API_URL}/api/market/candles?asset=${asset}&limit=${historyDays}`;
     
     try {
       const res = await fetch(url);
