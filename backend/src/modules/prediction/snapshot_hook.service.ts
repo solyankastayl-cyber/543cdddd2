@@ -284,6 +284,11 @@ export function extractDxySnapshotPayload(
     const core = terminalPack?.core;
     const replay = terminalPack?.replay;
     
+    // Debug logging
+    console.log('[ExtractDxy] replay exists:', !!replay);
+    console.log('[ExtractDxy] replay.window exists:', !!replay?.window);
+    console.log('[ExtractDxy] replay.window length:', replay?.window?.length || 0);
+    
     if (!hybrid?.path) return null;
     
     // Get current price from core.current.price
