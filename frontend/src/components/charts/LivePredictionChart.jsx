@@ -164,8 +164,8 @@ export const LivePredictionChart = ({
       handleScroll: { pressedMouseMove: true }
     });
     
-    // Candlestick series
-    const candleSeries = chart.addCandlestickSeries({
+    // Candlestick series (v5 API)
+    const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#16a34a',
       downColor: '#dc2626',
       borderUpColor: '#16a34a',
@@ -174,15 +174,15 @@ export const LivePredictionChart = ({
       wickDownColor: '#dc2626'
     });
     
-    // Volume series
-    const volumeSeries = chart.addHistogramSeries({
+    // Volume series (v5 API)
+    const volumeSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' },
       priceScaleId: '',
       scaleMargins: { top: 0.85, bottom: 0 }
     });
     
-    // Active prediction line
-    const activePred = chart.addLineSeries({
+    // Active prediction line (v5 API)
+    const activePred = chart.addSeries(LineSeries, {
       color: '#111827',
       lineWidth: 2,
       priceLineVisible: false,
