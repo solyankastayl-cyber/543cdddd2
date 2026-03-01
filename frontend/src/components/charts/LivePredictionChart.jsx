@@ -277,8 +277,14 @@ export const LivePredictionChart = ({
           return;
         }
         
-        // Set candles
-        candleSeriesRef.current.setData(candles);
+        // Set candles (use string dates for lightweight-charts)
+        candleSeriesRef.current.setData(candles.map(c => ({
+          time: c.time,
+          open: c.open,
+          high: c.high,
+          low: c.low,
+          close: c.close
+        })));
         
         // Set volume
         volumeSeriesRef.current.setData(
