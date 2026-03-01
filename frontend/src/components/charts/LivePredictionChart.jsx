@@ -341,7 +341,7 @@ export const LivePredictionChart = ({
             
             if (trimmedSeries.length < 2) continue;
             
-            const archivedLine = chartRef.current.addLineSeries({
+            const archivedLine = chartRef.current.addSeries(LineSeries, {
               color: 'rgba(107,114,128,0.35)',
               lineWidth: 1,
               lineStyle: 2, // Dashed
