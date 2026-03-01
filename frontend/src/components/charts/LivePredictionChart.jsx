@@ -1,0 +1,520 @@
+/**
+ * LIVE PREDICTION CHART — Production-ready TradingView-like
+ * 
+ * Built with lightweight-charts for professional trading experience.
+ * 
+ * Features:
+ * - Real OHLC candles + volume
+ * - Active prediction overlay
+ * - Archived predictions (gray, trimmed by next.asOf)
+ * - Zoom/scroll/crosshair
+ * - NO vertical NOW line
+ * - Horizon controls timescale (not TF selector)
+ */
+
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { createChart, CrosshairMode } from 'lightweight-charts';
+import { Eye, EyeOff, RefreshCw, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+function isoToUnixSeconds(iso) {
+  return Math.floor(new Date(iso).getTime() / 1000);
+}
+
+function dateToUnix(dateStr) {
+  // Handle both ISO and YYYY-MM-DD formats
+  if (dateStr.includes('T')) {
+    return isoToUnixSeconds(dateStr);
+  }
+  return Math.floor(new Date(dateStr + 'T00:00:00Z').getTime() / 1000);
+}
+
+function mapSeries(series) {
+  if (!series || !Array.isArray(series)) return [];
+  return series
+    .map(p => ({
+      time: dateToUnix(p.t),
+      value: p.v
+    }))
+    .filter(p => p.time && isFinite(p.value))
+    .sort((a, b) => a.time - b.time);
+}
+
+function trimByNextAsOf(points, nextAsOfIso) {
+  if (!nextAsOfIso || !points.length) return points;
+  const cutoff = isoToUnixSeconds(nextAsOfIso);
+  return points.filter(p => p.time <= cutoff);
+}
+
+// Horizon to history days mapping
+const HORIZON_HISTORY = {
+  7: 90,
+  14: 120,
+  30: 180,
+  90: 365,
+  180: 730,
+  365: 1825
+};
+
+// ═══════════════════════════════════════════════════════════════
+// CHART COMPONENT
+// ═══════════════════════════════════════════════════════════════
+
+export const LivePredictionChart = ({
+  asset = 'BTC',
+  horizonDays = 180,
+  view = 'hybrid',
+  onDataLoad = null
+}) => {
+  const containerRef = useRef(null);
+  const chartRef = useRef(null);
+  const candleSeriesRef = useRef(null);
+  const volumeSeriesRef = useRef(null);
+  const activePredRef = useRef(null);
+  const archivedRefs = useRef([]);
+  const bandRef = useRef(null);
+  
+  const [showHistory, setShowHistory] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [hoverData, setHoverData] = useState(null);
+  const [activeSnapshotInfo, setActiveSnapshotInfo] = useState(null);
+  
+  // Fetch candles
+  const fetchCandles = useCallback(async () => {
+    const historyDays = HORIZON_HISTORY[horizonDays] || 365;
+    const url = `${API_URL}/api/market/candles?symbol=${asset}&interval=1d&limit=${historyDays}`;
+    
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      if (data.ok && data.candles) {
+        return data.candles.map(c => ({
+          time: dateToUnix(c.t),
+          open: c.o,
+          high: c.h,
+          low: c.l,
+          close: c.c,
+          volume: c.v || 0
+        })).sort((a, b) => a.time - b.time);
+      }
+      return [];
+    } catch (e) {
+      console.error('[LiveChart] Candles fetch error:', e);
+      return [];
+    }
+  }, [asset, horizonDays]);
+  
+  // Fetch snapshots
+  const fetchSnapshots = useCallback(async () => {
+    const url = `${API_URL}/api/prediction/snapshots?asset=${asset}&view=${view}&horizon=${horizonDays}&limit=20`;
+    
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      if (data.ok && data.snapshots) {
+        return data.snapshots;
+      }
+      return [];
+    } catch (e) {
+      console.error('[LiveChart] Snapshots fetch error:', e);
+      return [];
+    }
+  }, [asset, view, horizonDays]);
+  
+  // Initialize chart
+  useEffect(() => {
+    if (!containerRef.current) return;
+    
+    const chart = createChart(containerRef.current, {
+      height: containerRef.current.clientHeight || 520,
+      layout: {
+        background: { color: '#ffffff' },
+        textColor: '#333333',
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+      },
+      grid: {
+        vertLines: { color: '#f0f0f0' },
+        horzLines: { color: '#f0f0f0' }
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+        vertLine: { labelVisible: true },
+        horzLine: { labelVisible: true }
+      },
+      rightPriceScale: {
+        borderColor: '#e5e5e5',
+        scaleMargins: { top: 0.1, bottom: 0.2 }
+      },
+      timeScale: {
+        borderColor: '#e5e5e5',
+        rightOffset: 12,
+        fixLeftEdge: true,
+        timeVisible: true,
+        secondsVisible: false
+      },
+      handleScale: { axisPressedMouseMove: true },
+      handleScroll: { pressedMouseMove: true }
+    });
+    
+    // Candlestick series
+    const candleSeries = chart.addCandlestickSeries({
+      upColor: '#16a34a',
+      downColor: '#dc2626',
+      borderUpColor: '#16a34a',
+      borderDownColor: '#dc2626',
+      wickUpColor: '#16a34a',
+      wickDownColor: '#dc2626'
+    });
+    
+    // Volume series
+    const volumeSeries = chart.addHistogramSeries({
+      priceFormat: { type: 'volume' },
+      priceScaleId: '',
+      scaleMargins: { top: 0.85, bottom: 0 }
+    });
+    
+    // Active prediction line
+    const activePred = chart.addLineSeries({
+      color: '#111827',
+      lineWidth: 2,
+      priceLineVisible: false,
+      lastValueVisible: true,
+      crosshairMarkerVisible: true
+    });
+    
+    // Subscribe to crosshair
+    chart.subscribeCrosshairMove(param => {
+      if (!param || !param.time) {
+        setHoverData(null);
+        return;
+      }
+      
+      const candleData = param.seriesData.get(candleSeries);
+      const predData = param.seriesData.get(activePred);
+      
+      setHoverData({
+        time: param.time,
+        candle: candleData,
+        prediction: predData?.value
+      });
+    });
+    
+    // Resize observer
+    const ro = new ResizeObserver(() => {
+      if (containerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight
+        });
+      }
+    });
+    ro.observe(containerRef.current);
+    
+    chartRef.current = chart;
+    candleSeriesRef.current = candleSeries;
+    volumeSeriesRef.current = volumeSeries;
+    activePredRef.current = activePred;
+    
+    return () => {
+      ro.disconnect();
+      chart.remove();
+      chartRef.current = null;
+      candleSeriesRef.current = null;
+      volumeSeriesRef.current = null;
+      activePredRef.current = null;
+      archivedRefs.current = [];
+    };
+  }, []);
+  
+  // Load data
+  useEffect(() => {
+    let cancelled = false;
+    
+    async function loadData() {
+      if (!chartRef.current || !candleSeriesRef.current || !volumeSeriesRef.current || !activePredRef.current) {
+        return;
+      }
+      
+      setLoading(true);
+      setError(null);
+      
+      // Clear archived series
+      for (const s of archivedRefs.current) {
+        try {
+          chartRef.current.removeSeries(s);
+        } catch (e) {}
+      }
+      archivedRefs.current = [];
+      
+      // Clear band if exists
+      if (bandRef.current) {
+        try {
+          chartRef.current.removeSeries(bandRef.current);
+        } catch (e) {}
+        bandRef.current = null;
+      }
+      
+      try {
+        const [candles, snapshots] = await Promise.all([
+          fetchCandles(),
+          fetchSnapshots()
+        ]);
+        
+        if (cancelled) return;
+        
+        if (candles.length === 0) {
+          setError('No candle data available');
+          setLoading(false);
+          return;
+        }
+        
+        // Set candles
+        candleSeriesRef.current.setData(candles);
+        
+        // Set volume
+        volumeSeriesRef.current.setData(
+          candles.map(c => ({
+            time: c.time,
+            value: c.volume || 0,
+            color: c.close >= c.open ? 'rgba(22,163,74,0.2)' : 'rgba(220,38,38,0.2)'
+          }))
+        );
+        
+        // Sort snapshots by asOf ascending
+        const sortedSnapshots = [...snapshots].sort(
+          (a, b) => isoToUnixSeconds(a.asOf) - isoToUnixSeconds(b.asOf)
+        );
+        
+        const activeSnapshot = sortedSnapshots.at(-1);
+        
+        // Set active prediction
+        if (activeSnapshot?.series) {
+          const predSeries = mapSeries(activeSnapshot.series);
+          activePredRef.current.setData(predSeries);
+          
+          // Set active snapshot info for display
+          setActiveSnapshotInfo({
+            stance: activeSnapshot.metadata?.stance || 'HOLD',
+            confidence: activeSnapshot.metadata?.confidence || 0.5,
+            asOf: activeSnapshot.asOf,
+            createdAt: activeSnapshot.createdAt
+          });
+          
+          // Notify parent
+          if (onDataLoad) {
+            onDataLoad({
+              stance: activeSnapshot.metadata?.stance,
+              confidence: activeSnapshot.metadata?.confidence,
+              asOf: activeSnapshot.asOf
+            });
+          }
+          
+          // Add confidence band if available
+          if (activeSnapshot.band?.p10 && activeSnapshot.band?.p90) {
+            // For bands we'd need area series - simplified for now
+          }
+        } else {
+          activePredRef.current.setData([]);
+          setActiveSnapshotInfo(null);
+        }
+        
+        // Add archived predictions
+        if (showHistory && sortedSnapshots.length > 1) {
+          for (let i = 0; i < sortedSnapshots.length - 1; i++) {
+            const snap = sortedSnapshots[i];
+            const nextSnap = sortedSnapshots[i + 1];
+            
+            if (!snap.series) continue;
+            
+            const trimmedSeries = trimByNextAsOf(
+              mapSeries(snap.series),
+              nextSnap.asOf
+            );
+            
+            if (trimmedSeries.length < 2) continue;
+            
+            const archivedLine = chartRef.current.addLineSeries({
+              color: 'rgba(107,114,128,0.35)',
+              lineWidth: 1,
+              lineStyle: 2, // Dashed
+              priceLineVisible: false,
+              lastValueVisible: false,
+              crosshairMarkerVisible: false
+            });
+            
+            archivedLine.setData(trimmedSeries);
+            archivedRefs.current.push(archivedLine);
+          }
+        }
+        
+        // Fit content
+        chartRef.current.timeScale().fitContent();
+        
+      } catch (e) {
+        if (!cancelled) {
+          setError(e.message);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+    
+    loadData();
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [asset, horizonDays, view, showHistory, fetchCandles, fetchSnapshots, onDataLoad]);
+  
+  // Stance icon
+  const StanceIcon = useMemo(() => {
+    if (!activeSnapshotInfo) return Minus;
+    switch (activeSnapshotInfo.stance) {
+      case 'BULLISH': return TrendingUp;
+      case 'BEARISH': return TrendingDown;
+      default: return Minus;
+    }
+  }, [activeSnapshotInfo]);
+  
+  const stanceColor = useMemo(() => {
+    if (!activeSnapshotInfo) return 'text-gray-500';
+    switch (activeSnapshotInfo.stance) {
+      case 'BULLISH': return 'text-emerald-600';
+      case 'BEARISH': return 'text-red-600';
+      default: return 'text-gray-600';
+    }
+  }, [activeSnapshotInfo]);
+  
+  return (
+    <div className="relative w-full" data-testid="live-prediction-chart">
+      {/* Chart Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium text-gray-600">
+            {asset} Fractal Prediction
+          </span>
+          
+          {activeSnapshotInfo && (
+            <div className="flex items-center gap-2">
+              <StanceIcon className={`w-4 h-4 ${stanceColor}`} />
+              <span className={`text-sm font-semibold ${stanceColor}`}>
+                {activeSnapshotInfo.stance}
+              </span>
+              <span className="text-sm text-gray-400">
+                {Math.round(activeSnapshotInfo.confidence * 100)}%
+              </span>
+            </div>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {/* History Toggle */}
+          <button
+            onClick={() => setShowHistory(v => !v)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-all ${
+              showHistory 
+                ? 'bg-gray-900 text-white' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+            data-testid="history-toggle"
+          >
+            {showHistory ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+            History
+          </button>
+          
+          {/* Refresh */}
+          <button
+            onClick={() => window.location.reload()}
+            className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+            disabled={loading}
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+      </div>
+      
+      {/* Error State */}
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10 rounded-2xl">
+          <div className="text-center">
+            <p className="text-red-600 mb-2">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="text-sm text-gray-600 hover:text-gray-800"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/60 z-10 rounded-2xl">
+          <RefreshCw className="w-8 h-8 text-gray-400 animate-spin" />
+        </div>
+      )}
+      
+      {/* Hover Tooltip */}
+      {hoverData?.candle && (
+        <div 
+          className="absolute top-12 left-4 bg-white border border-gray-100 rounded-xl shadow-lg p-3 z-20 min-w-[160px]"
+          style={{ pointerEvents: 'none' }}
+        >
+          <div className="text-xs text-gray-500 mb-2">
+            {new Date(hoverData.time * 1000).toLocaleDateString()}
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+            <span className="text-gray-400">O</span>
+            <span className="font-medium text-right">{hoverData.candle.open?.toLocaleString()}</span>
+            <span className="text-gray-400">H</span>
+            <span className="font-medium text-right">{hoverData.candle.high?.toLocaleString()}</span>
+            <span className="text-gray-400">L</span>
+            <span className="font-medium text-right">{hoverData.candle.low?.toLocaleString()}</span>
+            <span className="text-gray-400">C</span>
+            <span className="font-medium text-right">{hoverData.candle.close?.toLocaleString()}</span>
+          </div>
+          {hoverData.prediction && (
+            <div className="mt-2 pt-2 border-t border-gray-100">
+              <span className="text-gray-400 text-xs">Prediction: </span>
+              <span className="font-medium text-xs">{hoverData.prediction.toLocaleString()}</span>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* Chart Container */}
+      <div 
+        ref={containerRef} 
+        className="w-full rounded-2xl border border-gray-100 overflow-hidden"
+        style={{ height: '65vh', minHeight: '400px' }}
+      />
+      
+      {/* Legend */}
+      <div className="flex items-center gap-6 mt-3 text-xs text-gray-500">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-0.5 bg-gray-900"></div>
+          <span>Active Prediction</span>
+        </div>
+        {showHistory && (
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-0.5 bg-gray-400/50" style={{ borderTop: '1px dashed' }}></div>
+            <span>History (not corrected)</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default LivePredictionChart;
