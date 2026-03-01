@@ -342,6 +342,7 @@ export function extractSpxSnapshotPayload(
     const data = terminalPack?.data || terminalPack;
     const forecast = data?.forecast;
     const price = data?.price;
+    const overlay = data?.overlay;
     
     if (!forecast?.path || forecast.path.length < 5) return null;
     
@@ -351,30 +352,87 @@ export function extractSpxSnapshotPayload(
     };
     const horizonDays = horizonMap[horizon] || parseInt(horizon) || 30;
     
-    // Build series - path is array of values, need to create dates
+    // Get anchor point
+    const asOfPrice = price?.current || forecast.currentPrice || 6000;
+    const asOfDate = new Date();
+    const asOfDateStr = asOfDate.toISOString().split('T')[0];
+    
+    // ═══════════════════════════════════════════════════════════════
+    // BUILD FULL MODEL SERIES: [historical] → anchor → [forecast]
+    // ═══════════════════════════════════════════════════════════════
+    
+    const series: PredictionPoint[] = [];
+    
+    // 1) HISTORICAL PART - from currentWindow (model fit on past data)
+    const currentWindow = overlay?.currentWindow;
+    if (currentWindow?.raw && currentWindow?.timestamps) {
+      const raw = currentWindow.raw as number[];
+      const timestamps = currentWindow.timestamps as number[];
+      
+      // Take last N days of historical data (matching horizon for consistency)
+      const historyDays = Math.min(raw.length, horizonDays);
+      const startIdx = raw.length - historyDays;
+      
+      for (let i = startIdx; i < raw.length; i++) {
+        const ts = timestamps[i];
+        const dateStr = new Date(ts).toISOString().split('T')[0];
+        
+        // Don't include dates >= asOf (those belong to forecast)
+        if (dateStr < asOfDateStr) {
+          series.push({
+            t: dateStr,
+            v: raw[i]
+          });
+        }
+      }
+    }
+    
+    // 2) ANCHOR POINT - asOf with current price
+    series.push({
+      t: asOfDateStr,
+      v: asOfPrice
+    });
+    
+    // 3) FORECAST PART - from forecast.path
     const startDate = forecast.startTs ? new Date(forecast.startTs) : new Date();
-    const series: PredictionPoint[] = forecast.path.map((value: number, idx: number) => {
+    for (let idx = 0; idx < forecast.path.length; idx++) {
       const d = new Date(startDate);
       d.setDate(d.getDate() + idx);
-      return {
-        t: d.toISOString().split('T')[0], // YYYY-MM-DD
-        v: value
-      };
-    }).filter((p: PredictionPoint) => p.t && isFinite(p.v));
+      const dateStr = d.toISOString().split('T')[0];
+      
+      // Only include future dates (after asOf)
+      if (dateStr > asOfDateStr) {
+        series.push({
+          t: dateStr,
+          v: forecast.path[idx]
+        });
+      }
+    }
     
-    if (series.length < 5) return null;
+    // Filter and sort
+    const validSeries = series
+      .filter((p: PredictionPoint) => p.t && isFinite(p.v))
+      .sort((a, b) => a.t.localeCompare(b.t));
     
-    // Get current price
-    const asOfPrice = price?.current || forecast.currentPrice || 6000;
+    if (validSeries.length < 10) return null;
     
-    // Derive stance from first vs last
-    const firstVal = series[0].v;
-    const lastVal = series[series.length - 1].v;
-    const returnPct = (lastVal - firstVal) / firstVal;
+    // ═══════════════════════════════════════════════════════════════
+    // DERIVE STANCE FROM FORECAST DIRECTION
+    // ═══════════════════════════════════════════════════════════════
+    
+    // Find anchor index
+    const anchorIdx = validSeries.findIndex(p => p.t === asOfDateStr);
+    const forecastPart = validSeries.slice(anchorIdx);
     
     let stance: Stance = 'HOLD';
-    if (returnPct > 0.02) stance = 'BULLISH';
-    else if (returnPct < -0.02) stance = 'BEARISH';
+    if (forecastPart.length > 1) {
+      const firstVal = forecastPart[0].v;
+      const lastVal = forecastPart[forecastPart.length - 1].v;
+      const returnPct = (lastVal - firstVal) / firstVal;
+      
+      if (returnPct > 0.02) stance = 'BULLISH';
+      else if (returnPct < -0.02) stance = 'BEARISH';
+    }
     
     const confidence = data?.diagnostics?.qualityScore || 0.5;
     
@@ -382,9 +440,9 @@ export function extractSpxSnapshotPayload(
       asset: 'SPX',
       view: 'crossAsset',
       horizonDays,
-      asOf: new Date().toISOString(),
+      asOf: asOfDate.toISOString(),
       asOfPrice,
-      series,
+      series: validSeries,
       stance,
       confidence,
       modelVersion: 'v3.1.0',
