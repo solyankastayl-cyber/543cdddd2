@@ -97,14 +97,21 @@ export const LivePredictionChart = ({
       const data = await res.json();
       
       if (data.ok && data.candles) {
-        return data.candles.map(c => ({
-          time: c.t, // Keep as YYYY-MM-DD string
-          open: c.o,
-          high: c.h,
-          low: c.l,
-          close: c.c,
-          volume: c.v || 0
-        })).sort((a, b) => a.time.localeCompare(b.time));
+        return data.candles.map(c => {
+          // Convert ISO date to YYYY-MM-DD for lightweight-charts
+          let time = c.t;
+          if (time && time.includes('T')) {
+            time = time.split('T')[0];
+          }
+          return {
+            time,
+            open: c.o,
+            high: c.h,
+            low: c.l,
+            close: c.c,
+            volume: c.v || 0
+          };
+        }).filter(c => c.time).sort((a, b) => a.time.localeCompare(b.time));
       }
       return [];
     } catch (e) {
