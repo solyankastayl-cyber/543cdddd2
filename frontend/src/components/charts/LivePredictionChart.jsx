@@ -158,8 +158,12 @@ export const LivePredictionChart = ({
         borderColor: '#e5e5e5',
         rightOffset: 12,
         fixLeftEdge: true,
-        timeVisible: true,
+        timeVisible: false,
         secondsVisible: false
+      },
+      localization: {
+        locale: 'en-US',
+        dateFormat: 'yyyy-MM-dd'
       },
       handleScale: { axisPressedMouseMove: true },
       handleScroll: { pressedMouseMove: true }
