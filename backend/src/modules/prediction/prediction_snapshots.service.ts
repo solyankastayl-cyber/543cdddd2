@@ -290,8 +290,14 @@ export async function getMarketCandles(
   toDate?: string,
   limit: number = 365
 ): Promise<Candle[]> {
-  const db = _db || (await getCollection(), _db);
-  if (!db) return [];
+  // Ensure DB connection is established
+  if (!_db) {
+    await getCollection();
+  }
+  if (!_db) {
+    console.error('[Market Candles] No DB connection');
+    return [];
+  }
   
   // Map asset to collection
   const collectionMap: Record<AssetType, string> = {
@@ -300,7 +306,7 @@ export async function getMarketCandles(
     'DXY': 'dxy_candles'
   };
   
-  const candleCollection = db.collection(collectionMap[asset]);
+  const candleCollection = _db.collection(collectionMap[asset]);
   
   // BTC has different schema: { ts: Date, ohlcv: {o,h,l,c,v} }
   // SPX/DXY have: { date: string, open, high, low, close }
