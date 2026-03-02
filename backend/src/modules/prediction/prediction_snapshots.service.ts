@@ -19,6 +19,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { MongoClient, Db, Collection } from 'mongodb';
 import crypto from 'crypto';
+import { FIXED_HISTORY_START_DATE } from '../../shared/utils/buildFullSeries.js';
 
 // ═══════════════════════════════════════════════════════════════
 // TYPES
