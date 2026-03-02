@@ -3,9 +3,13 @@
  * 
  * Creates unified series: [history] → anchor → [forecast]
  * 
- * ARCHITECTURE RULES:
- * - History = ALWAYS 365 days (model fit window)
- * - Forecast = selected horizon (user choice)
+ * ARCHITECTURE RULES (FIXED):
+ * - History START = 2026-01-01 for ALL assets and ALL horizons
+ * - History END = asOf (NOW)
+ * - Forecast = selected horizon (variable: 7d, 14d, 30d, 90d, 180d, 365d)
+ * 
+ * History is built from CANDLE CLOSES (not from currentWindow.raw)
+ * to ensure consistency between chart candles and model-fit line.
  * 
  * Works for:
  * - BTC Fractal
@@ -13,15 +17,10 @@
  * - DXY Terminal
  */
 
-// ARCHITECTURE NOTE:
-// History window depends on data source availability:
-// - DXY: replay.window = 365 days (full history) ✓
-// - BTC: currentWindow.raw = windowLen from horizon config (limited by model)
-// - SPX: currentWindow.raw = windowLen from horizon config (limited by model)
-//
-// FIXED_HISTORY_DAYS is the TARGET. Actual history may be less if source
-// doesn't provide enough data. This is logged as a warning.
-export const FIXED_HISTORY_DAYS = 365;
+// FIXED: One history start date for ALL assets and ALL horizons
+// This ensures consistent chart range regardless of selected horizon
+export const FIXED_HISTORY_START_ISO = "2026-01-01T00:00:00.000Z";
+export const FIXED_HISTORY_START_DATE = "2026-01-01";
 
 export interface SeriesPoint {
   t: string;  // ISO date YYYY-MM-DD
