@@ -439,10 +439,32 @@ class UnifiedSnapshotTester:
                         has_series = 'series' in snapshot and len(snapshot['series']) > 0
                         has_anchor_index = 'anchorIndex' in snapshot
                         
-                        success = has_series and has_anchor_index
-                        details = f"Series: {len(snapshot.get('series', []))}, AnchorIndex: {snapshot.get('anchorIndex', 'Missing')}"
-                        self.log_result("DXY prediction snapshots series structure", success, details)
-                        return success
+                        if has_series and has_anchor_index:
+                            series = snapshot['series']
+                            anchor_index = snapshot['anchorIndex']
+                            
+                            if isinstance(anchor_index, int) and 0 <= anchor_index < len(series):
+                                history_length = anchor_index
+                                forecast_length = len(series) - anchor_index - 1
+                                
+                                details = f"Series length: {len(series)}, AnchorIndex: {anchor_index}, History: {history_length}, Forecast: {forecast_length}"
+                                
+                                # Valid series should have both history and forecast
+                                if history_length > 0 and forecast_length > 0:
+                                    self.log_result("DXY prediction snapshots series structure", True, details)
+                                    return True
+                                else:
+                                    self.log_result("DXY prediction snapshots series structure", False, f"Invalid series structure - {details}")
+                                    return False
+                            else:
+                                self.log_result("DXY prediction snapshots series structure", False, f"Invalid anchorIndex: {anchor_index}")
+                                return False
+                        else:
+                            missing = []
+                            if not has_series: missing.append("series")
+                            if not has_anchor_index: missing.append("anchorIndex")
+                            self.log_result("DXY prediction snapshots series structure", False, f"Missing: {missing}")
+                            return False
                     else:
                         self.log_result("DXY prediction snapshots series structure", False, "No snapshots found")
                         return False
