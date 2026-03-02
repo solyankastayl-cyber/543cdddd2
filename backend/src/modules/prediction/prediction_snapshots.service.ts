@@ -295,7 +295,7 @@ export async function getMarketCandles(
   
   // Map asset to collection
   const collectionMap: Record<AssetType, string> = {
-    'BTC': 'btc_candles',
+    'BTC': 'fractal_canonical_ohlcv',  // BTC candles in fractal collection
     'SPX': 'spx_candles',
     'DXY': 'dxy_candles'
   };
