@@ -221,18 +221,82 @@ async function fetchFractalTerminal(asset: Asset, focus: string): Promise<any> {
   if (cached) return cached;
   
   try {
+    // ARCHITECTURE FIX: Read from stored snapshot ONLY
+    // Overview MUST NOT recalculate model - only display saved predictions
+    const viewMap: Record<Asset, string> = {
+      dxy: 'hybrid',
+      spx: 'crossAsset',
+      btc: 'hybrid',
+    };
+    
+    const horizonDays = parseInt(focus.replace('d', '')) || 90;
+    const assetUpper = asset.toUpperCase();
+    const view = viewMap[asset];
+    
+    // Primary: Read from prediction_snapshots
+    const snapshotRes = await fetch(
+      `http://localhost:8002/api/prediction/snapshots?asset=${assetUpper}&view=${view}&horizon=${horizonDays}&limit=1`
+    );
+    const snapshotData = await snapshotRes.json();
+    
+    if (snapshotData.ok && snapshotData.snapshots?.length > 0) {
+      const snapshot = snapshotData.snapshots[0];
+      
+      // Convert snapshot to terminal format for compatibility
+      const result = {
+        ok: true,
+        source: 'snapshot_readonly',
+        modelVersion: snapshot.metadata?.modelVersion || 'unknown',
+        summary: {
+          projection: {
+            median: calculateProjection(snapshot.series, snapshot.anchorIndex),
+          },
+          confidence: snapshot.metadata?.confidence || 0.5,
+          tailRiskRate: 0,
+          stance: snapshot.metadata?.stance || 'HOLD',
+        },
+        charts: {
+          actual: snapshot.series.slice(0, snapshot.anchorIndex + 1),
+          predicted: snapshot.series.slice(snapshot.anchorIndex),
+        },
+        createdAt: snapshot.createdAt,
+        snapshotId: snapshot._id,
+      };
+      
+      console.log(`[Overview] READ-ONLY snapshot loaded: ${assetUpper}/${horizonDays}d (modelVersion: ${result.modelVersion})`);
+      setCache(cacheKey, result);
+      return result;
+    }
+    
+    // Fallback: If no snapshot exists, trigger terminal to create one
+    console.warn(`[Overview] No snapshot for ${assetUpper}/${horizonDays}d - triggering terminal`);
     const endpoints: Record<Asset, string> = {
       dxy: `/api/fractal/dxy/terminal?focus=${focus}`,
-      spx: `/api/spx/v2.1/terminal?horizon=${focus}`,
+      spx: `/api/spx/v2.1/focus-pack?horizon=${focus}`,
       btc: `/api/fractal/v2.1/focus-pack?symbol=BTC&focus=${focus}`,
     };
     const res = await fetch(`http://localhost:8002${endpoints[asset]}`);
     const data = await res.json();
+    data.source = 'terminal_fallback';
     setCache(cacheKey, data);
     return data;
   } catch (e) {
+    console.error('[Overview] fetchFractalTerminal error:', e);
     return null;
   }
+}
+
+/**
+ * Calculate projection percentage from series
+ */
+function calculateProjection(series: Array<{t: string, v: number}>, anchorIndex: number): number {
+  if (!series || series.length < 2 || anchorIndex < 0) return 0;
+  
+  const anchorPrice = series[anchorIndex]?.v || 0;
+  const finalPrice = series[series.length - 1]?.v || 0;
+  
+  if (anchorPrice === 0) return 0;
+  return (finalPrice - anchorPrice) / anchorPrice;
 }
 
 async function fetchBrainDecision(): Promise<any> {
