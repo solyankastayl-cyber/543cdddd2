@@ -517,10 +517,19 @@ export async function buildOverviewPack(
     };
   }
   
-  // Build charts from fractal timeline if available
+  // Build charts from fractal data
+  // FIXED: Support both snapshot format (charts.actual/predicted) and terminal format (timeline)
   let charts: OverviewPack['charts'] | undefined;
   
-  if (fractalData?.timeline) {
+  if (fractalData?.charts) {
+    // New snapshot format
+    charts = {
+      actual: fractalData.charts.actual || [],
+      predicted: fractalData.charts.predicted || [],
+    };
+    console.log(`[Overview] Charts from snapshot: actual=${charts.actual.length}, predicted=${charts.predicted.length}`);
+  } else if (fractalData?.timeline) {
+    // Legacy terminal format
     charts = {
       actual: fractalData.timeline.actual?.map((p: any) => ({ t: p.date, v: p.price })) || [],
       predicted: fractalData.timeline.predicted?.map((p: any) => ({ t: p.date, v: p.price })) || [],
