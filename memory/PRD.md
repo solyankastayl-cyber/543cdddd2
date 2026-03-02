@@ -48,6 +48,24 @@
 - **Fixed**: `/app/backend/src/modules/spx-core/spx-core.routes.ts`
   - Now supports both `horizon` and `focus` query parameters
 
+### Session 3 (2026-03-02) - Architecture Fixes
+**PROBLEM 1: History fixed at 365 days**
+- Updated unified_extractor to use FIXED_HISTORY_DAYS = 365
+- Note: BTC/SPX limited by engine's currentWindow.raw (90-200 days)
+- DXY has full 365 days from replay.window
+
+**PROBLEM 2: Overview read-only**
+- **Fixed**: `/app/backend/src/modules/overview/overview.service.ts`
+  - Overview now reads from prediction_snapshots only (READ-ONLY)
+  - No model recalculation - uses saved snapshots
+  - Logs: `[Overview] READ-ONLY snapshot loaded`
+
+**PROBLEM 3: Cross-module consistency**
+- Verified: Overview and Final Fractal show IDENTICAL forecastMax
+- BTC: 80,839.88 = 80,839.88 ✅
+- SPX: 7,232.58 = 7,232.58 ✅  
+- DXY: 118.79 = 118.79 ✅
+
 ## Testing Results
 - Backend: 100% pass rate
 - All horizons: 7d, 14d, 30d, 90d, 180d, 365d working
