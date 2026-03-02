@@ -1,0 +1,122 @@
+{
+  "tests_run": 19,
+  "tests_passed": 19,
+  "success_rate": 100.0,
+  "results": [
+    {
+      "name": "BTC 7d horizon",
+      "success": true,
+      "details": "Forecast: 7 points",
+      "timestamp": "2026-03-02T01:01:08.211639"
+    },
+    {
+      "name": "SPX 7d horizon",
+      "success": true,
+      "details": "Forecast: 7 points",
+      "timestamp": "2026-03-02T01:01:08.647351"
+    },
+    {
+      "name": "DXY 7d horizon",
+      "success": true,
+      "details": "Hybrid: 7 points",
+      "timestamp": "2026-03-02T01:01:09.159148"
+    },
+    {
+      "name": "BTC 14d horizon",
+      "success": true,
+      "details": "Forecast: 14 points",
+      "timestamp": "2026-03-02T01:01:09.381476"
+    },
+    {
+      "name": "SPX 14d horizon",
+      "success": true,
+      "details": "Forecast: 14 points",
+      "timestamp": "2026-03-02T01:01:09.787483"
+    },
+    {
+      "name": "DXY 14d horizon",
+      "success": true,
+      "details": "Hybrid: 14 points",
+      "timestamp": "2026-03-02T01:01:10.318428"
+    },
+    {
+      "name": "BTC 30d horizon",
+      "success": true,
+      "details": "Forecast: 30 points",
+      "timestamp": "2026-03-02T01:01:10.518513"
+    },
+    {
+      "name": "SPX 30d horizon",
+      "success": true,
+      "details": "Forecast: 30 points",
+      "timestamp": "2026-03-02T01:01:10.936256"
+    },
+    {
+      "name": "DXY 30d horizon",
+      "success": true,
+      "details": "Hybrid: 30 points",
+      "timestamp": "2026-03-02T01:01:11.518319"
+    },
+    {
+      "name": "BTC 90d horizon",
+      "success": true,
+      "details": "Forecast: 90 points",
+      "timestamp": "2026-03-02T01:01:11.855764"
+    },
+    {
+      "name": "SPX 90d horizon",
+      "success": true,
+      "details": "Forecast: 90 points",
+      "timestamp": "2026-03-02T01:01:12.332677"
+    },
+    {
+      "name": "DXY 90d horizon",
+      "success": true,
+      "details": "Hybrid: 90 points",
+      "timestamp": "2026-03-02T01:01:13.087803"
+    },
+    {
+      "name": "BTC hybrid snapshot unified features",
+      "success": true,
+      "details": "AnchorIndex: 90, Series: 180",
+      "timestamp": "2026-03-02T01:01:13.241070"
+    },
+    {
+      "name": "BTC crossAsset snapshot unified features",
+      "success": true,
+      "details": "No snapshots found (acceptable)",
+      "timestamp": "2026-03-02T01:01:13.379920"
+    },
+    {
+      "name": "SPX hybrid snapshot unified features",
+      "success": true,
+      "details": "No snapshots found (acceptable)",
+      "timestamp": "2026-03-02T01:01:13.531674"
+    },
+    {
+      "name": "SPX crossAsset snapshot unified features",
+      "success": true,
+      "details": "AnchorIndex: 90, Series: 180",
+      "timestamp": "2026-03-02T01:01:13.718491"
+    },
+    {
+      "name": "DXY hybrid snapshot unified features",
+      "success": true,
+      "details": "AnchorIndex: 90, Series: 171",
+      "timestamp": "2026-03-02T01:01:13.866731"
+    },
+    {
+      "name": "DXY crossAsset snapshot unified features",
+      "success": true,
+      "details": "No snapshots found (acceptable)",
+      "timestamp": "2026-03-02T01:01:13.996869"
+    },
+    {
+      "name": "Series temporal consistency",
+      "success": true,
+      "details": "Ordered: True, AnchorValid: True, Temporal: True",
+      "timestamp": "2026-03-02T01:01:14.139886"
+    }
+  ],
+  "timestamp": "2026-03-02T01:01:14.140533"
+}
