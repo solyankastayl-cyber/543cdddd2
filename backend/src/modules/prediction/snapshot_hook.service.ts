@@ -333,11 +333,11 @@ export function extractDxySnapshotPayload(
             if (rawDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
               // Already YYYY-MM-DD
               dateStr = rawDate;
-            } else if (rawDate.includes('T')) {
+            } else if (rawDate.match(/^\d{4}-\d{2}-\d{2}T/)) {
               // ISO format: 2024-09-04T00:00:00.000Z
               dateStr = rawDate.split('T')[0];
             } else {
-              // Try parsing any other string format
+              // Try parsing any other string format (including "Thu Oct 09...")
               try {
                 const d = new Date(rawDate);
                 if (!isNaN(d.getTime())) {
@@ -354,7 +354,7 @@ export function extractDxySnapshotPayload(
         
         // Log first few
         if (i < startIdx + 3) {
-          console.log(`[ExtractDxy] historical[${i}]: rawDate=${rawDate}, dateStr=${dateStr}`);
+          console.log(`[ExtractDxy] historical[${i}]: dateStr=${dateStr}`);
         }
         
         // Don't include dates >= asOf
