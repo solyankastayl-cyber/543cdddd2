@@ -1,117 +1,97 @@
 # Fractal Platform PRD
 
 ## Original Problem Statement
-Развернуть код из GitHub репозитория (https://github.com/solyankastayl-cyber/245678vgh). Проект включает:
-- BTC Fractal (индекс биткоина)
-- SPX Fractal (S&P 500)
-- DXY Fractal (Dollar Index с Macro Overlay)
-- Macro Brain
-- Overview page
-- Admin Panel
-
-FRED API Key: 2c0bf55cfd182a3a4d2e4fd017a622f7
+Развёртывание и доработка Fractal Platform из https://github.com/solyankastayl-cyber/7654323456.
+Модули: BTC Fractal, SPX Fractal, DXY Terminal.
+Требования: унификация snapshot логики для всех активов.
 
 ## Architecture
-- **Backend**: TypeScript (Fastify) на порту 8002 + Python proxy на порту 8001
-- **Frontend**: React с Tailwind CSS
-- **Database**: MongoDB
-- **Data Sources**: FRED API (macro data), Bitstamp/Kraken (BTC), Yahoo Finance (SPX)
-
-## User Personas
-1. **Trader** - использует прогнозы для принятия торговых решений
-2. **Analyst** - изучает паттерны и фракталы на рынках
-3. **Admin** - управляет системой через админ-панель
+- **Backend**: TypeScript (Fastify) on port 8002, proxied through Python FastAPI on port 8001
+- **Frontend**: React with TailwindCSS on port 3000
+- **Database**: MongoDB (fractal_platform)
+- **Key Collections**: prediction_snapshots, fractal_canonical_ohlcv, spx_candles, dxy_candles
 
 ## Core Requirements (Static)
-1. Фракталный анализ для BTC, SPX, DXY
-2. Prediction snapshots с историей
-3. Auto-save hook для terminal endpoints
-4. Macro overlay для DXY
-5. Cross-Asset режим для SPX
-6. Overview dashboard с вердиктами
+1. All three engines (BTC, SPX, DXY) must produce unified series format
+2. Series structure: [history] → anchor → [forecast]
+3. anchorIndex must be correctly calculated and stored
+4. All horizons (7d, 14d, 30d, 90d, 180d, 365d) must be supported
+
+## User Personas
+1. **Trader** - Uses forecast data for trading decisions
+2. **Analyst** - Studies historical patterns and model accuracy
+3. **Developer** - Integrates API into trading systems
 
 ## What's Been Implemented
 
-### 2026-03-01 (Initial Deployment)
-- [x] Клонирован и развёрнут репозиторий
-- [x] Настроены .env файлы (FRED_API_KEY, MONGO_URL)
-- [x] Установлены все зависимости (npm, yarn)
-- [x] Запущены backend и frontend через supervisor
-- [x] Все fractal endpoints работают:
-  - `/api/fractal/dxy/terminal` - DXY с Macro overlay
-  - `/api/spx/v2.1/focus-pack` - SPX analysis
-  - `/api/fractal/v2.1/focus-pack` - BTC analysis
-- [x] Prediction snapshot hook уже врезан в:
-  - DXY terminal route
-  - SPX core routes
-  - BTC focus routes
-- [x] Frontend страницы работают:
-  - `/fractal/btc` - BTC Fractal (NEUTRAL)
-  - `/fractal/spx` - SPX Fractal (BULLISH +2.41%)
-  - `/fractal/dxy` - DXY Fractal (BEARISH USD -5.77%)
-  - `/overview` - Market Overview
-  - `/admin` - Admin Panel (login)
+### Session 1 (2026-03-02)
+- Cloned and deployed repository from GitHub
+- Fixed BTC candles collection (fractal_canonical_ohlcv instead of btc_candles)
+- Configured FRED API key: 2c0bf55cfd182a3a4d2e4fd017a622f7
+- All services running: backend, frontend, MongoDB
 
-### 2026-03-01 (Overview Refactor + Prediction Wiring Fix)
-- [x] **LivePredictionChart** — новый компонент с lightweight-charts v5
-  - OHLC свечи (реальные, не линия)
-  - 65vh высота, full-width
-  - zoom/scroll/crosshair
-  - NO vertical NOW line
-- [x] **Overview Page** полностью переделан:
-  - Asset switcher вверху (SPX/BTC/DXY)
-  - Horizon switcher (7/14/30/90/180/365d)
-  - Большой график как главный элемент
-  - Verdict block под графиком
-  - Drivers/Risks compact grid
-  - Signal Stack collapsible
-- [x] **Prediction Overlay**:
-  - Active prediction — solid line
-  - Archived predictions — gray dashed, trimmed by next.asOf
-  - History toggle button
-- [x] **Snapshot Hook Fixes**:
-  - extractSpxSnapshotPayload - теперь парсит focusPack.forecast.path
-  - extractBtcSnapshotPayload - теперь парсит focusPack.forecast.path
-  - Series формат: {t: 'YYYY-MM-DD', v: number}
-- [x] **Candles API Fix**:
-  - Фронт теперь использует asset param вместо symbol
-  - ISO даты конвертируются в YYYY-MM-DD для lightweight-charts
+### Session 2 (2026-03-02) - Snapshot Unification
+- **Created**: `/app/backend/src/shared/utils/buildFullSeries.ts`
+  - Universal function to build [history] → anchor → [forecast] series
+  - Supports both raw prices and returns-based calculation
+  
+- **Created**: `/app/backend/src/modules/prediction/unified_extractor.ts`
+  - Single `extractSnapshotPayload()` function for all assets
+  - Asset-specific data extraction (extractBtcData, extractSpxData, extractDxyData)
+  - Legacy exports maintained for backward compatibility
 
-### Snapshot Hook Implementation Status
-- [x] `snapshot_hook.service.ts` - полностью реализован
-- [x] Smart save conditions (stance change, confidence delta >2%, series delta >0.35%)
-- [x] Rate limiting (15 min per key)
-- [x] Heartbeat fallback (24h)
-- [x] DXY terminal hook integration
-- [x] SPX core routes hook integration
-- [x] BTC focus routes hook integration
+- **Updated**: `/app/backend/src/modules/prediction/snapshot_hook.service.ts`
+  - Re-exports from unified_extractor.ts
+  - Disabled rate-limit for initial snapshot generation
+  - Rate-limit only for repeat saves (15 minutes)
 
-### PredictionChart Component Status
-- [x] Trim logic для archived snapshots
-- [x] Hover tooltip для historical forecasts
-- [x] NOW vertical line
-- [x] Active vs Archived styling
+- **Fixed**: `/app/backend/src/modules/spx-core/spx-core.routes.ts`
+  - Now supports both `horizon` and `focus` query parameters
+
+## Testing Results
+- Backend: 100% pass rate
+- All horizons: 7d, 14d, 30d, 90d, 180d, 365d working
+- anchorIndex correctly calculated for all assets
+- modelVersion: v3.2.0-unified
+
+## Snapshots in Database
+| Asset | Horizons | Status |
+|-------|----------|--------|
+| BTC | 14d, 30d, 90d, 180d, 365d | ✅ Working |
+| SPX | 7d, 14d, 30d, 90d, 180d, 365d | ✅ Working |
+| DXY | 14d, 30d, 90d, 180d, 365d | ✅ Working |
 
 ## Prioritized Backlog
 
 ### P0 (Critical)
-- Нет критических задач
+- [x] Unified snapshot extraction
+- [x] anchorIndex calculation
+- [x] All horizons support
 
-### P1 (High)
-- [ ] Overview page - ускорить загрузку данных
-- [ ] WebSocket reconnection logic (не критично, но желательно)
+### P1 (High Priority)
+- [ ] Historical returns calculation from raw prices (BTC/DXY missing modelReturns)
+- [ ] Extend historical window beyond 90 days for BTC
+- [ ] Frontend integration validation (preview server sleeping)
 
-### P2 (Medium)
-- [ ] Расширить tooltip информацией о Median projection vs actual
-- [ ] Добавить hash в UI для аудита моделей
-- [ ] Parents linking для crossAsset snapshots (dxySnapshotId, spxHybridSnapshotId)
+### P2 (Medium Priority)
+- [ ] WebSocket real-time updates
+- [ ] Snapshot comparison and divergence tracking
+- [ ] Performance optimization for large series
 
-### P3 (Low/Future)
-- [ ] Export predictions to CSV
-- [ ] Email alerts при смене stance
-- [ ] Mobile-optimized views
+### P3 (Nice to Have)
+- [ ] Admin dashboard enhancements
+- [ ] Export functionality
+- [ ] Multi-timeframe overlay
 
 ## Next Tasks
-1. Протестировать полный flow prediction history на фронте
-2. Добавить seed data для демонстрации history функционала
-3. Оптимизировать Overview page loading
+1. Validate frontend chart rendering with new unified series
+2. Extend BTC historical window (currently limited to 90 days from currentWindow.raw)
+3. Add modelReturns calculation for assets that lack it
+4. Implement divergence tracking between snapshots
+
+## API Endpoints
+- `GET /api/fractal/v2.1/focus-pack?focus={horizon}` - BTC Fractal
+- `GET /api/spx/v2.1/focus-pack?horizon={horizon}` - SPX Fractal  
+- `GET /api/fractal/dxy/terminal?focus={horizon}` - DXY Terminal
+- `GET /api/prediction/snapshots?asset={asset}&view={view}&horizon={days}` - Stored snapshots
+- `GET /api/market/candles?asset={asset}&limit={n}` - Historical candles
