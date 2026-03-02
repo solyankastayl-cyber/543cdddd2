@@ -249,7 +249,12 @@ function extractBtcData(
 /**
  * Extract data from SPX focusPack (wrapped in 'data')
  */
-function extractSpxData(data: any, horizonDays: number, asOfDateStr: string): ExtractResult | null {
+function extractSpxData(
+  data: any, 
+  horizonDays: number, 
+  asOfDateStr: string,
+  historicalCandles?: Array<{ t: string; close: number }>
+): ExtractResult | null {
   const forecast = data?.forecast;
   const overlay = data?.overlay;
   const currentWindow = overlay?.currentWindow;
@@ -260,16 +265,25 @@ function extractSpxData(data: any, horizonDays: number, asOfDateStr: string): Ex
   const asOfPrice = price?.current || forecast.currentPrice || 0;
   if (asOfPrice === 0) return null;
   
-  // Historical prices from currentWindow.raw
+  // Historical prices: prefer candles over currentWindow.raw
   const historicalPrices: number[] = [];
   const historicalDates: string[] = [];
   
-  if (currentWindow?.raw && currentWindow?.timestamps) {
+  if (historicalCandles && historicalCandles.length > 0) {
+    // Use provided candles (full history from FIXED_HISTORY_START_DATE)
+    for (const c of historicalCandles) {
+      const dateStr = c.t.split('T')[0];
+      if (dateStr >= FIXED_HISTORY_START_DATE && dateStr < asOfDateStr) {
+        historicalPrices.push(c.close);
+        historicalDates.push(dateStr);
+      }
+    }
+  } else if (currentWindow?.raw && currentWindow?.timestamps) {
+    // Fallback: use currentWindow.raw (limited by horizon config)
     const raw = currentWindow.raw as number[];
     const timestamps = currentWindow.timestamps as number[];
     const dates = timestampsToDateStrings(timestamps);
     
-    // FIXED: History starts from FIXED_HISTORY_START_DATE (2026-01-01)
     for (let i = 0; i < raw.length; i++) {
       const dateStr = dates[i];
       if (dateStr && dateStr >= FIXED_HISTORY_START_DATE && dateStr < asOfDateStr) {
