@@ -191,20 +191,11 @@ function extractBtcData(focusPack: any, horizonDays: number, asOfDateStr: string
     const timestamps = currentWindow.timestamps as number[];
     const dates = timestampsToDateStrings(timestamps);
     
-    // FIXED: Always use 365 days of history regardless of forecast horizon
-    // History = model fit window (fixed)
-    // Forecast = user-selected horizon (variable)
-    // NOTE: If source has less than 365 days, use all available
-    const historyLen = Math.min(raw.length, FIXED_HISTORY_DAYS);
-    const startIdx = Math.max(0, raw.length - historyLen);
-    
-    if (raw.length < FIXED_HISTORY_DAYS) {
-      console.warn(`[UnifiedExtractor] BTC: source has only ${raw.length} days, expected ${FIXED_HISTORY_DAYS}. Using all available.`);
-    }
-    
-    for (let i = startIdx; i < raw.length; i++) {
+    // FIXED: History starts from FIXED_HISTORY_START_DATE (2026-01-01)
+    // Only include dates from 2026-01-01 to asOf
+    for (let i = 0; i < raw.length; i++) {
       const dateStr = dates[i];
-      if (dateStr && dateStr < asOfDateStr) {
+      if (dateStr && dateStr >= FIXED_HISTORY_START_DATE && dateStr < asOfDateStr) {
         historicalPrices.push(raw[i]);
         historicalDates.push(dateStr);
       }
