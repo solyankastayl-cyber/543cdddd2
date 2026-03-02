@@ -173,8 +173,10 @@ function extractBtcData(focusPack: any, horizonDays: number, asOfDateStr: string
     const timestamps = currentWindow.timestamps as number[];
     const dates = timestampsToDateStrings(timestamps);
     
-    // Take last N days matching horizon
-    const historyLen = Math.min(raw.length, horizonDays);
+    // FIXED: Always use 365 days of history regardless of forecast horizon
+    // History = model fit window (fixed)
+    // Forecast = user-selected horizon (variable)
+    const historyLen = Math.min(raw.length, FIXED_HISTORY_DAYS);
     const startIdx = raw.length - historyLen;
     
     for (let i = startIdx; i < raw.length; i++) {
