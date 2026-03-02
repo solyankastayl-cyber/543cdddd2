@@ -304,8 +304,18 @@ class UnifiedSnapshotTester:
                     if len(snapshots) > 0:
                         snapshot = snapshots[0]
                         has_anchor_index = 'anchorIndex' in snapshot
-                        self.log_result("BTC prediction snapshots anchorIndex", has_anchor_index, f"AnchorIndex: {snapshot.get('anchorIndex', 'Missing')}")
-                        return has_anchor_index
+                        has_series = 'series' in snapshot and len(snapshot['series']) > 0
+                        details = f"AnchorIndex: {snapshot.get('anchorIndex', 'Missing')}, Series length: {len(snapshot.get('series', []))}"
+                        
+                        if has_anchor_index and has_series:
+                            self.log_result("BTC prediction snapshots anchorIndex", True, details)
+                            return True
+                        else:
+                            missing = []
+                            if not has_anchor_index: missing.append("anchorIndex")
+                            if not has_series: missing.append("series")
+                            self.log_result("BTC prediction snapshots anchorIndex", False, f"Missing: {missing}")
+                            return False
                     else:
                         self.log_result("BTC prediction snapshots anchorIndex", False, "No snapshots found")
                         return False
