@@ -1,0 +1,349 @@
+{
+  "timestamp": "2026-03-02T08:32:00.594096",
+  "base_url": "https://forex-fractal.preview.emergentagent.com",
+  "tests_run": 27,
+  "tests_passed": 12,
+  "critical_issues": [
+    "BTC 30d - Series Structure: {'series_present': False, 'anchor_index_present': False}",
+    "BTC 90d - Series Structure: {'series_present': False, 'anchor_index_present': False}",
+    "BTC 180d - Series Structure: {'series_present': False, 'anchor_index_present': False}",
+    "SPX 30d - Series Structure: {'series_present': False, 'anchor_index_present': False}",
+    "SPX 90d - Series Structure: {'series_present': False, 'anchor_index_present': False}",
+    "SPX 180d - Series Structure: {'series_present': False, 'anchor_index_present': False}",
+    "DXY 30d - Series Structure: {'series_present': False, 'anchor_index_present': False}",
+    "DXY 90d - Series Structure: {'series_present': False, 'anchor_index_present': False}",
+    "DXY 180d - Series Structure: {'series_present': False, 'anchor_index_present': False}",
+    "BTC ForecastMax Consistency: {'overview_forecast': 90, 'focus_forecast': None, 'difference': None}",
+    "SPX ForecastMax Consistency: {'overview_forecast': 90, 'focus_forecast': None, 'difference': None}",
+    "DXY ForecastMax Consistency: {'overview_forecast': 90, 'focus_forecast': None, 'difference': None}",
+    "DXY 30d - AnchorIndex Missing: {'anchor_index': None, 'series_present': False}",
+    "DXY 90d - AnchorIndex Missing: {'anchor_index': None, 'series_present': False}",
+    "DXY 180d - AnchorIndex Missing: {'anchor_index': None, 'series_present': False}"
+  ],
+  "test_details": [
+    {
+      "name": "BTC 30d - Series Structure",
+      "passed": false,
+      "details": {
+        "series_present": false,
+        "anchor_index_present": false
+      }
+    },
+    {
+      "name": "BTC 90d - Series Structure",
+      "passed": false,
+      "details": {
+        "series_present": false,
+        "anchor_index_present": false
+      }
+    },
+    {
+      "name": "BTC 180d - Series Structure",
+      "passed": false,
+      "details": {
+        "series_present": false,
+        "anchor_index_present": false
+      }
+    },
+    {
+      "name": "SPX 30d - Series Structure",
+      "passed": false,
+      "details": {
+        "series_present": false,
+        "anchor_index_present": false
+      }
+    },
+    {
+      "name": "SPX 90d - Series Structure",
+      "passed": false,
+      "details": {
+        "series_present": false,
+        "anchor_index_present": false
+      }
+    },
+    {
+      "name": "SPX 180d - Series Structure",
+      "passed": false,
+      "details": {
+        "series_present": false,
+        "anchor_index_present": false
+      }
+    },
+    {
+      "name": "DXY 30d - Series Structure",
+      "passed": false,
+      "details": {
+        "series_present": false,
+        "anchor_index_present": false
+      }
+    },
+    {
+      "name": "DXY 90d - Series Structure",
+      "passed": false,
+      "details": {
+        "series_present": false,
+        "anchor_index_present": false
+      }
+    },
+    {
+      "name": "DXY 180d - Series Structure",
+      "passed": false,
+      "details": {
+        "series_present": false,
+        "anchor_index_present": false
+      }
+    },
+    {
+      "name": "Overview DXY 30d - Read-Only Snapshot",
+      "passed": true,
+      "details": {
+        "system_version": "v3.1.0",
+        "version_found": true,
+        "readonly_source": false,
+        "has_charts": true
+      }
+    },
+    {
+      "name": "Overview DXY 90d - Read-Only Snapshot",
+      "passed": true,
+      "details": {
+        "system_version": "v3.1.0",
+        "version_found": true,
+        "readonly_source": false,
+        "has_charts": true
+      }
+    },
+    {
+      "name": "Overview DXY 180d - Read-Only Snapshot",
+      "passed": true,
+      "details": {
+        "system_version": "v3.1.0",
+        "version_found": true,
+        "readonly_source": false,
+        "has_charts": true
+      }
+    },
+    {
+      "name": "Overview SPX 30d - Read-Only Snapshot",
+      "passed": true,
+      "details": {
+        "system_version": "v3.1.0",
+        "version_found": true,
+        "readonly_source": false,
+        "has_charts": true
+      }
+    },
+    {
+      "name": "Overview SPX 90d - Read-Only Snapshot",
+      "passed": true,
+      "details": {
+        "system_version": "v3.1.0",
+        "version_found": true,
+        "readonly_source": false,
+        "has_charts": true
+      }
+    },
+    {
+      "name": "Overview SPX 180d - Read-Only Snapshot",
+      "passed": true,
+      "details": {
+        "system_version": "v3.1.0",
+        "version_found": true,
+        "readonly_source": false,
+        "has_charts": true
+      }
+    },
+    {
+      "name": "Overview BTC 30d - Read-Only Snapshot",
+      "passed": true,
+      "details": {
+        "system_version": "v3.1.0",
+        "version_found": true,
+        "readonly_source": false,
+        "has_charts": true
+      }
+    },
+    {
+      "name": "Overview BTC 90d - Read-Only Snapshot",
+      "passed": true,
+      "details": {
+        "system_version": "v3.1.0",
+        "version_found": true,
+        "readonly_source": false,
+        "has_charts": true
+      }
+    },
+    {
+      "name": "Overview BTC 180d - Read-Only Snapshot",
+      "passed": true,
+      "details": {
+        "system_version": "v3.1.0",
+        "version_found": true,
+        "readonly_source": false,
+        "has_charts": true
+      }
+    },
+    {
+      "name": "BTC ForecastMax Consistency",
+      "passed": false,
+      "details": {
+        "overview_forecast": 90,
+        "focus_forecast": null,
+        "difference": null
+      }
+    },
+    {
+      "name": "SPX ForecastMax Consistency",
+      "passed": false,
+      "details": {
+        "overview_forecast": 90,
+        "focus_forecast": null,
+        "difference": null
+      }
+    },
+    {
+      "name": "DXY ForecastMax Consistency",
+      "passed": false,
+      "details": {
+        "overview_forecast": 90,
+        "focus_forecast": null,
+        "difference": null
+      }
+    },
+    {
+      "name": "Overview DXY - Charts Not Empty",
+      "passed": true,
+      "details": {
+        "actual_points": 366,
+        "predicted_points": 81,
+        "charts_structure": true
+      }
+    },
+    {
+      "name": "Overview SPX - Charts Not Empty",
+      "passed": true,
+      "details": {
+        "actual_points": 201,
+        "predicted_points": 90,
+        "charts_structure": true
+      }
+    },
+    {
+      "name": "Overview BTC - Charts Not Empty",
+      "passed": true,
+      "details": {
+        "actual_points": 91,
+        "predicted_points": 90,
+        "charts_structure": true
+      }
+    },
+    {
+      "name": "DXY 30d - AnchorIndex Missing",
+      "passed": false,
+      "details": {
+        "anchor_index": null,
+        "series_present": false
+      }
+    },
+    {
+      "name": "DXY 90d - AnchorIndex Missing",
+      "passed": false,
+      "details": {
+        "anchor_index": null,
+        "series_present": false
+      }
+    },
+    {
+      "name": "DXY 180d - AnchorIndex Missing",
+      "passed": false,
+      "details": {
+        "anchor_index": null,
+        "series_present": false
+      }
+    }
+  ],
+  "architecture_validation": {
+    "fixed_history_365d": {},
+    "overview_readonly": {
+      "dxy_30": {
+        "model_version": "v3.1.0",
+        "readonly_indicators": false,
+        "valid": true
+      },
+      "dxy_90": {
+        "model_version": "v3.1.0",
+        "readonly_indicators": false,
+        "valid": true
+      },
+      "dxy_180": {
+        "model_version": "v3.1.0",
+        "readonly_indicators": false,
+        "valid": true
+      },
+      "spx_30": {
+        "model_version": "v3.1.0",
+        "readonly_indicators": false,
+        "valid": true
+      },
+      "spx_90": {
+        "model_version": "v3.1.0",
+        "readonly_indicators": false,
+        "valid": true
+      },
+      "spx_180": {
+        "model_version": "v3.1.0",
+        "readonly_indicators": false,
+        "valid": true
+      },
+      "btc_30": {
+        "model_version": "v3.1.0",
+        "readonly_indicators": false,
+        "valid": true
+      },
+      "btc_90": {
+        "model_version": "v3.1.0",
+        "readonly_indicators": false,
+        "valid": true
+      },
+      "btc_180": {
+        "model_version": "v3.1.0",
+        "readonly_indicators": false,
+        "valid": true
+      }
+    },
+    "unified_forecastmax": {
+      "BTC": {
+        "overview_forecast": 90,
+        "focus_forecast": null,
+        "consistent": false
+      },
+      "SPX": {
+        "overview_forecast": 90,
+        "focus_forecast": null,
+        "consistent": false
+      },
+      "DXY": {
+        "overview_forecast": 90,
+        "focus_forecast": null,
+        "consistent": false
+      }
+    },
+    "charts_not_empty": {
+      "dxy": {
+        "actual_count": 366,
+        "predicted_count": 81,
+        "valid": true
+      },
+      "spx": {
+        "actual_count": 201,
+        "predicted_count": 90,
+        "valid": true
+      },
+      "btc": {
+        "actual_count": 91,
+        "predicted_count": 90,
+        "valid": true
+      }
+    }
+  }
+}
