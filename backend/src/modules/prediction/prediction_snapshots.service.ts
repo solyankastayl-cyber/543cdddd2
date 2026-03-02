@@ -511,8 +511,103 @@ export async function registerPredictionRoutes(app: FastifyInstance): Promise<vo
     });
   });
   
+  /**
+   * GET /api/audit/overview-series
+   * Diagnostic endpoint to verify series consistency
+   * 
+   * Returns:
+   * - asOfISO, historyStartISO
+   * - candles stats (firstTime, lastTime, count)
+   * - series stats (firstTime, anchorTime, lastTime, count)
+   * - errors[] if any inconsistencies found
+   */
+  app.get('/api/audit/overview-series', async (request: FastifyRequest, reply: FastifyReply) => {
+    const { 
+      asset = 'BTC', 
+      horizonDays = '90' 
+    } = request.query as { asset?: string; horizonDays?: string };
+    
+    const validAssets: AssetType[] = ['SPX', 'DXY', 'BTC'];
+    const assetParsed = validAssets.includes(asset.toUpperCase() as AssetType) 
+      ? asset.toUpperCase() as AssetType 
+      : 'BTC';
+    const horizonParsed = parseInt(horizonDays) || 90;
+    
+    const asOfDate = new Date().toISOString().split('T')[0];
+    const historyStartISO = FIXED_HISTORY_START_DATE;
+    
+    const errors: string[] = [];
+    
+    // Get candles
+    const candles = await getMarketCandles(assetParsed, historyStartISO, asOfDate, 2000);
+    const candlesFirst = candles[0]?.t || null;
+    const candlesLast = candles[candles.length - 1]?.t || null;
+    
+    // Get latest snapshot
+    const viewMap: Record<AssetType, PredictionView> = {
+      'BTC': 'hybrid',
+      'SPX': 'crossAsset', 
+      'DXY': 'hybrid',
+    };
+    const snapshots = await getSnapshots(assetParsed, viewMap[assetParsed], horizonParsed, 1);
+    const snapshot = snapshots[0] || null;
+    
+    const seriesFirst = snapshot?.series?.[0]?.t || null;
+    const anchorIndex = snapshot?.anchorIndex ?? -1;
+    const seriesAnchor = anchorIndex >= 0 ? snapshot?.series?.[anchorIndex]?.t : null;
+    const seriesLast = snapshot?.series?.[snapshot.series.length - 1]?.t || null;
+    const seriesCount = snapshot?.series?.length || 0;
+    const forecastCount = anchorIndex >= 0 ? seriesCount - anchorIndex - 1 : 0;
+    
+    // Validate
+    if (candlesFirst && candlesFirst > historyStartISO) {
+      errors.push(`candles.first (${candlesFirst}) > historyStart (${historyStartISO})`);
+    }
+    if (seriesFirst && seriesFirst < historyStartISO) {
+      errors.push(`series.first (${seriesFirst}) < historyStart (${historyStartISO})`);
+    }
+    if (seriesFirst && candlesFirst && seriesFirst !== candlesFirst) {
+      errors.push(`series.first (${seriesFirst}) !== candles.first (${candlesFirst})`);
+    }
+    if (anchorIndex < 0 && snapshot) {
+      errors.push('anchorIndex is missing');
+    }
+    if (forecastCount === 0 && [7, 14].includes(horizonParsed)) {
+      errors.push(`forecast is empty for horizon ${horizonParsed}d`);
+    }
+    if (seriesCount < 10 && snapshot) {
+      errors.push(`series too short: ${seriesCount} points`);
+    }
+    
+    return reply.send({
+      ok: errors.length === 0,
+      asset: assetParsed,
+      horizonDays: horizonParsed,
+      asOfISO: asOfDate,
+      historyStartISO,
+      candles: {
+        firstTime: candlesFirst,
+        lastTime: candlesLast,
+        count: candles.length,
+      },
+      series: {
+        firstTime: seriesFirst,
+        anchorTime: seriesAnchor,
+        anchorIndex,
+        lastTime: seriesLast,
+        count: seriesCount,
+      },
+      forecast: {
+        count: forecastCount,
+      },
+      modelVersion: snapshot?.metadata?.modelVersion || null,
+      errors,
+    });
+  });
+  
   console.log('[Prediction] Snapshot routes registered at /api/prediction/*');
   console.log('[Prediction] Market candles at /api/market/candles');
+  console.log('[Prediction] Audit endpoint at /api/audit/overview-series');
 }
 
 export default registerPredictionRoutes;
