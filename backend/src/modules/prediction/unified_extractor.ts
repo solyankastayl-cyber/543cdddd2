@@ -301,7 +301,8 @@ function extractDxyData(terminalPack: any, horizonDays: number, asOfDateStr: str
   
   const replayWindow = replay?.window;
   if (replayWindow && Array.isArray(replayWindow)) {
-    const historyLen = Math.min(replayWindow.length, horizonDays);
+    // FIXED: Always use 365 days of history regardless of forecast horizon
+    const historyLen = Math.min(replayWindow.length, FIXED_HISTORY_DAYS);
     const startIdx = replayWindow.length - historyLen;
     
     for (let i = startIdx; i < replayWindow.length; i++) {
