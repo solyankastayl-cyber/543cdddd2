@@ -254,17 +254,10 @@ function extractSpxData(data: any, horizonDays: number, asOfDateStr: string): Ex
     const timestamps = currentWindow.timestamps as number[];
     const dates = timestampsToDateStrings(timestamps);
     
-    // FIXED: Always use 365 days of history regardless of forecast horizon
-    const historyLen = Math.min(raw.length, FIXED_HISTORY_DAYS);
-    const startIdx = Math.max(0, raw.length - historyLen);
-    
-    if (raw.length < FIXED_HISTORY_DAYS) {
-      console.warn(`[UnifiedExtractor] SPX: source has only ${raw.length} days, expected ${FIXED_HISTORY_DAYS}. Using all available.`);
-    }
-    
-    for (let i = startIdx; i < raw.length; i++) {
+    // FIXED: History starts from FIXED_HISTORY_START_DATE (2026-01-01)
+    for (let i = 0; i < raw.length; i++) {
       const dateStr = dates[i];
-      if (dateStr && dateStr < asOfDateStr) {
+      if (dateStr && dateStr >= FIXED_HISTORY_START_DATE && dateStr < asOfDateStr) {
         historicalPrices.push(raw[i]);
         historicalDates.push(dateStr);
       }
