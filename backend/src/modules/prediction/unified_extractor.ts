@@ -240,7 +240,8 @@ function extractSpxData(data: any, horizonDays: number, asOfDateStr: string): Ex
     const timestamps = currentWindow.timestamps as number[];
     const dates = timestampsToDateStrings(timestamps);
     
-    const historyLen = Math.min(raw.length, horizonDays);
+    // FIXED: Always use 365 days of history regardless of forecast horizon
+    const historyLen = Math.min(raw.length, FIXED_HISTORY_DAYS);
     const startIdx = raw.length - historyLen;
     
     for (let i = startIdx; i < raw.length; i++) {
