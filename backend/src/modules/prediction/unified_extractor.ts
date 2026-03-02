@@ -13,6 +13,7 @@ import {
   buildFullSeries, 
   timestampsToDateStrings, 
   generateDateArray,
+  FIXED_HISTORY_DAYS,
   type SeriesPoint,
   type BuildFullSeriesResult 
 } from '../../shared/utils/buildFullSeries.js';
