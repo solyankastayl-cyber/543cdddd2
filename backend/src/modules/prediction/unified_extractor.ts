@@ -63,6 +63,8 @@ export interface ExtractorInput {
   engineResult: any;       // focusPack, data, or terminalPack
   horizon: string;         // '30d', '90d', etc.
   sourceEndpoint: string;
+  // NEW: Optional candles for history (bypasses currentWindow.raw limitation)
+  historicalCandles?: Array<{ t: string; close: number }>;
 }
 
 /**
@@ -70,7 +72,7 @@ export interface ExtractorInput {
  * Works for BTC, SPX, DXY
  */
 export function extractSnapshotPayload(input: ExtractorInput): SnapshotPayload | null {
-  const { asset, engineResult, horizon, sourceEndpoint } = input;
+  const { asset, engineResult, horizon, sourceEndpoint, historicalCandles } = input;
   
   try {
     const horizonDays = HORIZON_MAP[horizon] || parseInt(horizon) || 30;
@@ -82,10 +84,10 @@ export function extractSnapshotPayload(input: ExtractorInput): SnapshotPayload |
     
     switch (asset) {
       case 'BTC':
-        extractResult = extractBtcData(engineResult, horizonDays, asOfDateStr);
+        extractResult = extractBtcData(engineResult, horizonDays, asOfDateStr, historicalCandles);
         break;
       case 'SPX':
-        extractResult = extractSpxData(engineResult, horizonDays, asOfDateStr);
+        extractResult = extractSpxData(engineResult, horizonDays, asOfDateStr, historicalCandles);
         break;
       case 'DXY':
         extractResult = extractDxyData(engineResult, horizonDays, asOfDateStr);
