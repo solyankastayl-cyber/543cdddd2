@@ -406,13 +406,14 @@ export async function registerPredictionRoutes(app: FastifyInstance): Promise<vo
   /**
    * GET /api/market/candles
    * Get market candles for chart
+   * FIXED: Default from = FIXED_HISTORY_START_DATE (2026-01-01)
    */
   app.get('/api/market/candles', async (request: FastifyRequest, reply: FastifyReply) => {
     const { 
       asset = 'SPX', 
       from,
       to,
-      limit = '365'
+      limit = '1000'  // Increased default limit
     } = request.query as { 
       asset?: string; 
       from?: string;
@@ -425,16 +426,25 @@ export async function registerPredictionRoutes(app: FastifyInstance): Promise<vo
       ? asset as AssetType 
       : 'SPX';
     
+    // FIXED: Default from = FIXED_HISTORY_START_DATE (2026-01-01)
+    // History always starts from the same date regardless of horizon
+    const fromDate = from || FIXED_HISTORY_START_DATE;
+    const toDate = to || new Date().toISOString().split('T')[0];
+    
+    console.log(`[Market Candles] ${assetParsed}: from=${fromDate} to=${toDate}`);
+    
     const candles = await getMarketCandles(
       assetParsed,
-      from,
-      to,
-      Math.min(parseInt(limit) || 365, 1000)
+      fromDate,
+      toDate,
+      Math.min(parseInt(limit) || 1000, 2000)
     );
     
     return reply.send({
       ok: true,
       asset: assetParsed,
+      from: fromDate,
+      to: toDate,
       count: candles.length,
       candles
     });
