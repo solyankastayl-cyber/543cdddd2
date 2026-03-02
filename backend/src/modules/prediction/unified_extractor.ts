@@ -11,9 +11,11 @@
 
 import { 
   buildFullSeries, 
+  buildFullSeriesFromCandles,
   timestampsToDateStrings, 
   generateDateArray,
-  FIXED_HISTORY_DAYS,
+  FIXED_HISTORY_START_DATE,
+  FIXED_HISTORY_START_ISO,
   type SeriesPoint,
   type BuildFullSeriesResult 
 } from '../../shared/utils/buildFullSeries.js';
