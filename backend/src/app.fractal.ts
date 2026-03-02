@@ -688,14 +688,6 @@ async function main() {
   await btcOverlayRoutes(app);
   console.log('[Fractal] ✅ BTC Overlay registered at /api/overlay/*');
   
-  // ═══════════════════════════════════════════════════════════════
-  // PREDICTION SNAPSHOTS — Chart data + prediction history
-  // ═══════════════════════════════════════════════════════════════
-  console.log('[Fractal] Registering Prediction Snapshots...');
-  const { registerPredictionRoutes } = await import('./modules/prediction/prediction_snapshots.service.js');
-  await registerPredictionRoutes(app);
-  console.log('[Fractal] ✅ Prediction Snapshots registered at /api/prediction/*, /api/market/candles');
-  
   // Graceful shutdown
   const shutdown = async (signal: string) => {
     console.log(`[Fractal] Received ${signal}, shutting down...`);
