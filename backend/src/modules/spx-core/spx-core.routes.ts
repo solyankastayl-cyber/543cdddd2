@@ -52,6 +52,7 @@ export async function registerSpxCoreRoutes(fastify: FastifyInstance): Promise<v
       
       // Auto-save snapshot hook (non-blocking)
       const snapshotPayload = extractSpxSnapshotPayload(focusPack, focus);
+      console.log('[SPX Core] Snapshot payload extracted:', !!snapshotPayload, 'series length:', snapshotPayload?.series?.length || 0);
       if (snapshotPayload) {
         snapshotHook(snapshotPayload).catch(e => {
           console.warn('[SPX Core] Snapshot hook failed:', e.message);
