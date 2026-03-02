@@ -1,62 +1,62 @@
 {
   "tests_run": 9,
-  "tests_passed": 6,
-  "success_rate": 66.66666666666666,
+  "tests_passed": 9,
+  "success_rate": 100.0,
   "results": [
     {
       "name": "BTC focus-pack 30d series structure",
       "success": true,
       "details": "Forecast points: 30, History points: 60",
-      "timestamp": "2026-03-02T00:58:39.190123"
+      "timestamp": "2026-03-02T01:00:09.711291"
     },
     {
       "name": "BTC focus-pack 90d series length",
       "success": true,
       "details": "Total series length: 180, History: 90, Forecast: 90",
-      "timestamp": "2026-03-02T00:58:39.463938"
+      "timestamp": "2026-03-02T01:00:10.004398"
     },
     {
       "name": "SPX focus-pack horizon parameter",
       "success": true,
       "details": "Horizon supported: 30d, Forecast points: 30",
-      "timestamp": "2026-03-02T00:58:39.968552"
+      "timestamp": "2026-03-02T01:00:10.413917"
     },
     {
       "name": "SPX focus-pack 90d series length",
-      "success": false,
-      "details": "Series length 290 not in expected range",
-      "timestamp": "2026-03-02T00:58:40.422274"
+      "success": true,
+      "details": "Total series length: 290, History: 200, Forecast: 90",
+      "timestamp": "2026-03-02T01:00:10.927067"
     },
     {
       "name": "DXY terminal 30d series",
       "success": true,
       "details": "Hybrid forecast points: 30, Replay history points: 180",
-      "timestamp": "2026-03-02T00:58:41.026241"
+      "timestamp": "2026-03-02T01:00:11.489204"
     },
     {
       "name": "DXY terminal 90d series length",
-      "success": false,
-      "details": "Series length 455 not in expected range",
-      "timestamp": "2026-03-02T00:58:41.766279"
+      "success": true,
+      "details": "Total series length: 455, Hybrid: 90, Replay: 365",
+      "timestamp": "2026-03-02T01:00:12.214927"
     },
     {
       "name": "BTC prediction snapshots anchorIndex",
       "success": true,
-      "details": "AnchorIndex: 90",
-      "timestamp": "2026-03-02T00:58:41.932743"
+      "details": "AnchorIndex: 90, Series length: 180",
+      "timestamp": "2026-03-02T01:00:12.374533"
     },
     {
       "name": "SPX prediction snapshots modelVersion",
-      "success": false,
-      "details": "ModelVersion: None",
-      "timestamp": "2026-03-02T00:58:42.066094"
+      "success": true,
+      "details": "ModelVersion: v3.2.0-unified",
+      "timestamp": "2026-03-02T01:00:12.526022"
     },
     {
       "name": "DXY prediction snapshots series structure",
       "success": true,
-      "details": "Series: 171, AnchorIndex: 90",
-      "timestamp": "2026-03-02T00:58:42.201280"
+      "details": "Series length: 171, AnchorIndex: 90, History: 90, Forecast: 80",
+      "timestamp": "2026-03-02T01:00:12.648830"
     }
   ],
-  "timestamp": "2026-03-02T00:58:42.201936"
+  "timestamp": "2026-03-02T01:00:12.649521"
 }
