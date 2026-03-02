@@ -302,6 +302,29 @@ export async function getMarketCandles(
   
   const candleCollection = db.collection(collectionMap[asset]);
   
+  // BTC has different schema: { ts: Date, ohlcv: {o,h,l,c,v} }
+  // SPX/DXY have: { date: string, open, high, low, close }
+  if (asset === 'BTC') {
+    const query: any = {};
+    if (fromDate) query.ts = { $gte: new Date(fromDate) };
+    if (toDate) query.ts = { ...query.ts, $lte: new Date(toDate) };
+    
+    const candles = await candleCollection
+      .find(query)
+      .sort({ ts: -1 })
+      .limit(limit)
+      .toArray();
+    
+    return candles.map(c => ({
+      t: c.ts instanceof Date ? c.ts.toISOString().split('T')[0] : c.ts,
+      o: c.ohlcv?.o || 0,
+      h: c.ohlcv?.h || 0,
+      l: c.ohlcv?.l || 0,
+      c: c.ohlcv?.c || 0
+    })).reverse();
+  }
+  
+  // SPX/DXY schema
   const query: any = {};
   if (fromDate) query.date = { $gte: fromDate };
   if (toDate) query.date = { ...query.date, $lte: toDate };
