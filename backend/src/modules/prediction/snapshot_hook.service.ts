@@ -327,6 +327,11 @@ export function extractDxySnapshotPayload(
         const rawDate = p.date || p.t;
         let dateStr: string | undefined;
         
+        // Log raw data for debugging
+        if (i < startIdx + 2) {
+          console.log(`[ExtractDxy] i=${i}, p.date=${JSON.stringify(p.date)}, p.t=${JSON.stringify(p.t)}, rawDate=${JSON.stringify(rawDate)}, typeof=${typeof rawDate}`);
+        }
+        
         // Convert various date formats to YYYY-MM-DD
         if (rawDate) {
           if (typeof rawDate === 'string') {
@@ -337,7 +342,7 @@ export function extractDxySnapshotPayload(
               // ISO format: 2024-09-04T00:00:00.000Z
               dateStr = rawDate.split('T')[0];
             } else {
-              // Try parsing any other string format (including "Thu Oct 09...")
+              // Try parsing any other string format
               try {
                 const d = new Date(rawDate);
                 if (!isNaN(d.getTime())) {
@@ -346,15 +351,14 @@ export function extractDxySnapshotPayload(
               } catch (e) {}
             }
           } else if (typeof rawDate === 'number') {
-            // Unix timestamp
-            const d = new Date(rawDate);
-            dateStr = d.toISOString().split('T')[0];
+            // Unix timestamp or index - need to calculate date
+            // For index, we don't have dates so skip
+            dateStr = undefined;
           }
         }
         
-        // Log first few
-        if (i < startIdx + 3) {
-          console.log(`[ExtractDxy] historical[${i}]: dateStr=${dateStr}`);
+        if (i < startIdx + 2) {
+          console.log(`[ExtractDxy] -> dateStr=${dateStr}`);
         }
         
         // Don't include dates >= asOf
