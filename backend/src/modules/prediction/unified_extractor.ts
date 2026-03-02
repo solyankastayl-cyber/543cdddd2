@@ -436,16 +436,25 @@ function deriveStance(series: PredictionPoint[], anchorIndex: number): Stance {
 // LEGACY EXPORTS (for backward compatibility)
 // ═══════════════════════════════════════════════════════════════
 
-export function extractBtcSnapshotPayload(focusPack: any, focus: string): SnapshotPayload | null {
+export function extractBtcSnapshotPayload(
+  focusPack: any, 
+  focus: string,
+  historicalCandles?: Array<{ t: string; close: number }>
+): SnapshotPayload | null {
   return extractSnapshotPayload({
     asset: 'BTC',
     engineResult: focusPack,
     horizon: focus,
     sourceEndpoint: '/api/fractal/v2.1/focus-pack',
+    historicalCandles,
   });
 }
 
-export function extractSpxSnapshotPayload(terminalPack: any, horizon: string): SnapshotPayload | null {
+export function extractSpxSnapshotPayload(
+  terminalPack: any, 
+  horizon: string,
+  historicalCandles?: Array<{ t: string; close: number }>
+): SnapshotPayload | null {
   // SPX wraps data in 'data' key
   const data = terminalPack?.data || terminalPack;
   return extractSnapshotPayload({
@@ -453,6 +462,7 @@ export function extractSpxSnapshotPayload(terminalPack: any, horizon: string): S
     engineResult: data,
     horizon,
     sourceEndpoint: '/api/spx/v2.1/focus-pack',
+    historicalCandles,
   });
 }
 
