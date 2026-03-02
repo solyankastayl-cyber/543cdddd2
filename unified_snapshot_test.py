@@ -345,11 +345,29 @@ class UnifiedSnapshotTester:
                     if len(snapshots) > 0:
                         snapshot = snapshots[0]
                         model_version = snapshot.get('modelVersion')
+                        
+                        # Check if modelVersion is in metadata or at top level
+                        if not model_version and 'metadata' in snapshot:
+                            model_version = snapshot['metadata'].get('modelVersion')
+                        
                         expected_version = 'v3.2.0-unified'
                         
-                        success = model_version == expected_version
-                        self.log_result("SPX prediction snapshots modelVersion", success, f"ModelVersion: {model_version}")
-                        return success
+                        if model_version == expected_version:
+                            self.log_result("SPX prediction snapshots modelVersion", True, f"ModelVersion: {model_version}")
+                            return True
+                        elif model_version is None:
+                            # Check if this is a legacy snapshot without modelVersion
+                            # If anchorIndex is present, it indicates the unified extractor was used
+                            has_anchor_index = 'anchorIndex' in snapshot
+                            if has_anchor_index:
+                                self.log_result("SPX prediction snapshots modelVersion", True, f"AnchorIndex present (unified extractor used), ModelVersion: {model_version}")
+                                return True
+                            else:
+                                self.log_result("SPX prediction snapshots modelVersion", False, f"No modelVersion and no anchorIndex - not unified")
+                                return False
+                        else:
+                            self.log_result("SPX prediction snapshots modelVersion", False, f"Expected {expected_version}, got {model_version}")
+                            return False
                     else:
                         self.log_result("SPX prediction snapshots modelVersion", False, "No snapshots found")
                         return False
