@@ -1,0 +1,66 @@
+{
+  "summary": "Tested architectural fixes implementation. Critical Issue Found: History is NOT consistently fixed at 365 days across all assets and horizons. Only DXY 90d/180d correctly shows 365-day history. BTC and SPX still use variable history lengths. Overview read-only functionality working correctly.",
+  
+  "backend_issues": {
+    "critical_bugs": [
+      {
+        "component": "buildFullSeries / unified_extractor",
+        "issue": "FIXED_HISTORY_DAYS = 365 not consistently applied across all assets and horizons",
+        "impact": "Architecture specification violated - history should always be 365 days but varies by asset",
+        "fix_priority": "CRITICAL",
+        "evidence": {
+          "BTC_30d_anchorIndex": 60,
+          "BTC_90d_anchorIndex": 90,
+          "BTC_180d_anchorIndex": 90,
+          "SPX_30d_anchorIndex": 120,
+          "SPX_90d_anchorIndex": 200,
+          "SPX_180d_anchorIndex": 260,
+          "DXY_30d_anchorIndex": 180,
+          "DXY_90d_anchorIndex": 365,
+          "DXY_180d_anchorIndex": 365,
+          "expected_all": "~365 days"
+        }
+      }
+    ],
+    "inconsistent_behavior": [
+      {
+        "component": "Snapshot generation",
+        "issue": "Different extraction logic being applied to different assets",
+        "details": "DXY 90d+ works correctly with 365 days, but BTC/SPX and DXY 30d use different history lengths"
+      }
+    ]
+  },
+  
+  "frontend_issues": {},
+  
+  "passed_tests": [
+    "Overview DXY/SPX/BTC endpoints responding correctly",
+    "Overview reading from snapshots (read-only behavior confirmed)",
+    "Overview charts.actual and charts.predicted NOT empty",
+    "Overview shows systemVersion and proper structure",
+    "DXY 90d and 180d correctly have 365-day history (anchorIndex = 365)",
+    "Snapshot endpoints accessible and returning data",
+    "Model version v3.2.0-unified present in system"
+  ],
+  
+  "test_report_links": [
+    "/app/review_request_architectural_test.py",
+    "/app/architectural_test_results.json"
+  ],
+  
+  "success_percentage": {
+    "backend": "60%",
+    "architecture_365d_history": "22% (2 of 9 asset/horizon combinations correct)",
+    "overview_readonly": "100%",
+    "charts_functionality": "100%"
+  },
+  
+  "action_item_for_main_agent": "CRITICAL: Fix FIXED_HISTORY_DAYS = 365 implementation. The buildFullSeries function is not being consistently applied across all assets (BTC/SPX/DXY) and all horizons (30d/90d/180d). Only DXY 90d/180d show correct 365-day history. Need to investigate why BTC and SPX extraction functions are not using the fixed history length. Check unified_extractor.ts implementation for BTC and SPX extraction logic.",
+  
+  "updated_files": [
+    "/app/review_request_architectural_test.py"
+  ],
+  
+  "should_call_test_agent_after_fix": "true",
+  "should_main_agent_test_itself": "false"
+}
