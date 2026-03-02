@@ -324,29 +324,37 @@ export function extractDxySnapshotPayload(
       let historicalCount = 0;
       for (let i = startIdx; i < replayWindow.length; i++) {
         const p = replayWindow[i];
-        let dateStr = p.date || p.t;
+        const rawDate = p.date || p.t;
+        let dateStr: string | undefined;
         
         // Convert various date formats to YYYY-MM-DD
-        if (dateStr) {
-          if (typeof dateStr === 'string') {
-            if (dateStr.includes('T')) {
+        if (rawDate) {
+          if (typeof rawDate === 'string') {
+            if (rawDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              // Already YYYY-MM-DD
+              dateStr = rawDate;
+            } else if (rawDate.includes('T')) {
               // ISO format: 2024-09-04T00:00:00.000Z
-              dateStr = dateStr.split('T')[0];
-            } else if (dateStr.includes('GMT') || dateStr.includes('UTC')) {
-              // Date string format: Thu Oct 09 2025 00:00:00 GMT+0000
-              const d = new Date(dateStr);
-              dateStr = d.toISOString().split('T')[0];
+              dateStr = rawDate.split('T')[0];
+            } else {
+              // Try parsing any other string format
+              try {
+                const d = new Date(rawDate);
+                if (!isNaN(d.getTime())) {
+                  dateStr = d.toISOString().split('T')[0];
+                }
+              } catch (e) {}
             }
-          } else if (typeof dateStr === 'number') {
+          } else if (typeof rawDate === 'number') {
             // Unix timestamp
-            const d = new Date(dateStr);
+            const d = new Date(rawDate);
             dateStr = d.toISOString().split('T')[0];
           }
         }
         
         // Log first few
         if (i < startIdx + 3) {
-          console.log(`[ExtractDxy] historical[${i}]: dateStr=${dateStr}, compare=${dateStr < asOfDateStr}`);
+          console.log(`[ExtractDxy] historical[${i}]: rawDate=${rawDate}, dateStr=${dateStr}`);
         }
         
         // Don't include dates >= asOf
