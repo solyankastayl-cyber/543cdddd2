@@ -87,6 +87,7 @@ export async function focusPackRoutes(fastify: FastifyInstance): Promise<void> {
       
       // Auto-save snapshot hook (non-blocking)
       const snapshotPayload = extractBtcSnapshotPayload(focusPack, focus);
+      console.log('[BTC FocusPack] Snapshot payload extracted:', !!snapshotPayload, 'series length:', snapshotPayload?.series?.length || 0);
       if (snapshotPayload) {
         snapshotHook(snapshotPayload).catch(e => {
           console.warn('[BTC FocusPack] Snapshot hook failed:', e.message);
