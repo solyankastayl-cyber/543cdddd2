@@ -35,8 +35,8 @@ export async function registerSpxCoreRoutes(fastify: FastifyInstance): Promise<v
    * Includes: matches, overlay, forecast, divergence, primary selection.
    */
   fastify.get(`${prefix}/focus-pack`, async (req: FastifyRequest, reply: FastifyReply) => {
-    const query = req.query as { focus?: string };
-    const focus = query.focus || '30d';
+    const query = req.query as { focus?: string; horizon?: string };
+    const focus = query.horizon || query.focus || '30d';  // Support both 'horizon' and 'focus' params
     
     // Validate horizon
     if (!isValidSpxHorizon(focus)) {
