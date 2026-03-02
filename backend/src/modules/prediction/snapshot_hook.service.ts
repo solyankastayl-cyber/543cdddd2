@@ -327,14 +327,12 @@ export function extractDxySnapshotPayload(
         const rawDate = p.date || p.t;
         let dateStr: string | undefined;
         
-        // Log raw data for debugging
-        if (i < startIdx + 2) {
-          console.log(`[ExtractDxy] i=${i}, p.date=${JSON.stringify(p.date)}, p.t=${JSON.stringify(p.t)}, rawDate=${JSON.stringify(rawDate)}, typeof=${typeof rawDate}`);
-        }
-        
         // Convert various date formats to YYYY-MM-DD
         if (rawDate) {
-          if (typeof rawDate === 'string') {
+          if (rawDate instanceof Date) {
+            // JavaScript Date object
+            dateStr = rawDate.toISOString().split('T')[0];
+          } else if (typeof rawDate === 'string') {
             if (rawDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
               // Already YYYY-MM-DD
               dateStr = rawDate;
@@ -351,14 +349,29 @@ export function extractDxySnapshotPayload(
               } catch (e) {}
             }
           } else if (typeof rawDate === 'number') {
-            // Unix timestamp or index - need to calculate date
-            // For index, we don't have dates so skip
-            dateStr = undefined;
+            // Unix timestamp
+            const d = new Date(rawDate);
+            if (!isNaN(d.getTime())) {
+              dateStr = d.toISOString().split('T')[0];
+            }
+          } else if (typeof rawDate === 'object' && rawDate !== null) {
+            // Could be a Date-like object or has toISOString
+            try {
+              if (typeof rawDate.toISOString === 'function') {
+                dateStr = rawDate.toISOString().split('T')[0];
+              } else {
+                const d = new Date(rawDate);
+                if (!isNaN(d.getTime())) {
+                  dateStr = d.toISOString().split('T')[0];
+                }
+              }
+            } catch (e) {}
           }
         }
         
+        // Log first few for debugging
         if (i < startIdx + 2) {
-          console.log(`[ExtractDxy] -> dateStr=${dateStr}`);
+          console.log(`[ExtractDxy] i=${i}, dateStr=${dateStr}`);
         }
         
         // Don't include dates >= asOf
