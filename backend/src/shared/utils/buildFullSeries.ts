@@ -3,11 +3,18 @@
  * 
  * Creates unified series: [history] → anchor → [forecast]
  * 
+ * ARCHITECTURE RULES:
+ * - History = ALWAYS 365 days (model fit window)
+ * - Forecast = selected horizon (user choice)
+ * 
  * Works for:
  * - BTC Fractal
  * - SPX Fractal
  * - DXY Terminal
  */
+
+// FIXED: History is always 365 days regardless of forecast horizon
+export const FIXED_HISTORY_DAYS = 365;
 
 export interface SeriesPoint {
   t: string;  // ISO date YYYY-MM-DD
