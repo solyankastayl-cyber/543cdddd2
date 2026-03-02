@@ -13,7 +13,14 @@
  * - DXY Terminal
  */
 
-// FIXED: History is always 365 days regardless of forecast horizon
+// ARCHITECTURE NOTE:
+// History window depends on data source availability:
+// - DXY: replay.window = 365 days (full history) ✓
+// - BTC: currentWindow.raw = windowLen from horizon config (limited by model)
+// - SPX: currentWindow.raw = windowLen from horizon config (limited by model)
+//
+// FIXED_HISTORY_DAYS is the TARGET. Actual history may be less if source
+// doesn't provide enough data. This is logged as a warning.
 export const FIXED_HISTORY_DAYS = 365;
 
 export interface SeriesPoint {
