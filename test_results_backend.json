@@ -6,51 +6,51 @@
     {
       "name": "Health Check",
       "success": true,
-      "details": "Status: {'status': 'ok', 'proxy': 'python', 'ts_backend': {'ok': True, 'mode': 'FRACTAL_ONLY', 'timestamp': '2026-03-01T22:23:50.351Z'}}",
-      "timestamp": "2026-03-01T22:23:50.373121"
+      "details": "Status: {'status': 'ok', 'proxy': 'python', 'ts_backend': {'ok': True, 'mode': 'FRACTAL_ONLY', 'timestamp': '2026-03-02T00:38:49.133Z'}}",
+      "timestamp": "2026-03-02T00:38:49.151426"
     },
     {
       "name": "DXY Terminal API",
       "success": true,
       "details": "Response keys: ['ok', 'asset', 'focus', 'ts', 'processingTimeMs', 'meta', 'core', 'synthetic', 'replay', 'hybrid', 'macro', 'horizonMeta']",
-      "timestamp": "2026-03-01T22:23:51.029201"
+      "timestamp": "2026-03-02T00:38:49.918924"
     },
     {
       "name": "SPX Focus Pack API",
       "success": true,
       "details": "Symbol: SPX, Focus: 30d",
-      "timestamp": "2026-03-01T22:23:51.566298"
+      "timestamp": "2026-03-02T00:38:50.563866"
     },
     {
       "name": "Prediction Stats API",
       "success": true,
       "details": "Response type: dict",
-      "timestamp": "2026-03-01T22:23:51.717991"
+      "timestamp": "2026-03-02T00:38:50.732380"
     },
     {
       "name": "Overview API",
       "success": true,
       "details": "Response structure valid",
-      "timestamp": "2026-03-01T22:24:00.195059"
+      "timestamp": "2026-03-02T00:39:02.904571"
     },
     {
       "name": "SPX Terminal API",
       "success": true,
       "details": "Status: 200",
-      "timestamp": "2026-03-01T22:24:00.361888"
+      "timestamp": "2026-03-02T00:39:03.056584"
     },
     {
       "name": "SPX Horizons API",
       "success": true,
       "details": "Status: 200",
-      "timestamp": "2026-03-01T22:24:00.494886"
+      "timestamp": "2026-03-02T00:39:03.184222"
     },
     {
       "name": "DXY Macro Debug API",
       "success": true,
       "details": "Status: 200",
-      "timestamp": "2026-03-01T22:24:00.621241"
+      "timestamp": "2026-03-02T00:39:03.489849"
     }
   ],
-  "timestamp": "2026-03-01T22:24:00.622091"
+  "timestamp": "2026-03-02T00:39:03.490695"
 }
