@@ -83,6 +83,7 @@ export async function registerDxyTerminalRoutes(fastify: FastifyInstance): Promi
       
       // Auto-save snapshot hook (non-blocking)
       const snapshotPayload = extractDxySnapshotPayload(terminalPack, focus);
+      console.log('[DXY Terminal] Snapshot payload extracted:', !!snapshotPayload, 'series length:', snapshotPayload?.series?.length || 0);
       if (snapshotPayload) {
         snapshotHook(snapshotPayload).catch(e => {
           console.warn('[DXY Terminal] Snapshot hook failed:', e.message);
