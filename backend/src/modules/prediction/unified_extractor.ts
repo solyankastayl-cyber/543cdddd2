@@ -115,7 +115,23 @@ export function extractSnapshotPayload(input: ExtractorInput): SnapshotPayload |
     // Derive stance from forecast direction
     const stance = deriveStance(result.series, result.anchorIndex);
     
-    console.log(`[UnifiedExtractor] ${asset}/${horizon}: series=${result.series.length}, anchor=${result.anchorIndex}, history=${result.historyLength}, forecast=${result.forecastLength}`);
+    // DEBUG: Log full extraction details for cross-module verification
+    console.log(`[UnifiedExtractor] ${asset}/${horizon}:`, {
+      seriesLength: result.series.length,
+      anchorIndex: result.anchorIndex,
+      historyLength: result.historyLength,
+      forecastLength: result.forecastLength,
+      asOfDate: asOfDateStr,
+      asOfPrice: asOfPrice.toFixed(2),
+      firstDate: result.series[0]?.t,
+      firstPrice: result.series[0]?.v?.toFixed(2),
+      anchorDate: result.series[result.anchorIndex]?.t,
+      anchorPrice: result.series[result.anchorIndex]?.v?.toFixed(2),
+      lastDate: result.series[result.series.length - 1]?.t,
+      lastPrice: result.series[result.series.length - 1]?.v?.toFixed(2),
+      stance,
+      confidence: confidence.toFixed(3),
+    });
     
     return {
       asset,
