@@ -312,15 +312,11 @@ function extractDxyData(terminalPack: any, horizonDays: number, asOfDateStr: str
   
   const replayWindow = replay?.window;
   if (replayWindow && Array.isArray(replayWindow)) {
-    // FIXED: Always use 365 days of history regardless of forecast horizon
-    const historyLen = Math.min(replayWindow.length, FIXED_HISTORY_DAYS);
-    const startIdx = replayWindow.length - historyLen;
-    
-    for (let i = startIdx; i < replayWindow.length; i++) {
-      const p = replayWindow[i];
+    // FIXED: History starts from FIXED_HISTORY_START_DATE (2026-01-01)
+    for (const p of replayWindow) {
       const dateStr = parseDateStr(p.date || p.t);
       
-      if (dateStr && dateStr < asOfDateStr) {
+      if (dateStr && dateStr >= FIXED_HISTORY_START_DATE && dateStr < asOfDateStr) {
         historicalPrices.push(p.value || p.v);
         historicalDates.push(dateStr);
       }
