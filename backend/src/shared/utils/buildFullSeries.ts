@@ -72,11 +72,13 @@ export function buildFullSeries(params: BuildFullSeriesParams): BuildFullSeriesR
 
   const series: SeriesPoint[] = [];
   
-  // 1) HISTORICAL PART (before anchor)
+  // 1) HISTORICAL PART: from FIXED_HISTORY_START to asOf
+  const historyStart = FIXED_HISTORY_START_DATE;
+  
   for (let i = 0; i < historicalPrices.length; i++) {
     const date = historicalDates[i];
-    // Skip if date >= asOfDate (belongs to future)
-    if (date && date < asOfDate) {
+    // Only include dates >= FIXED_HISTORY_START and < asOf
+    if (date && date >= historyStart && date < asOfDate) {
       series.push({
         t: date,
         v: historicalPrices[i]
@@ -84,7 +86,7 @@ export function buildFullSeries(params: BuildFullSeriesParams): BuildFullSeriesR
     }
   }
   
-  // 2) ANCHOR POINT
+  // 2) ANCHOR POINT (asOf)
   const anchorIndex = series.length;
   series.push({
     t: asOfDate,
@@ -94,7 +96,7 @@ export function buildFullSeries(params: BuildFullSeriesParams): BuildFullSeriesR
   // 3) FORECAST PART (after anchor)
   for (let i = 0; i < forecastPrices.length; i++) {
     const date = forecastDates[i];
-    // Only include future dates
+    // Only include future dates (strictly after asOf)
     if (date && date > asOfDate) {
       series.push({
         t: date,
@@ -116,6 +118,62 @@ export function buildFullSeries(params: BuildFullSeriesParams): BuildFullSeriesR
     anchorIndex: finalAnchorIndex >= 0 ? finalAnchorIndex : Math.floor(validSeries.length / 2),
     historyLength: finalAnchorIndex >= 0 ? finalAnchorIndex : 0,
     forecastLength: finalAnchorIndex >= 0 ? validSeries.length - finalAnchorIndex - 1 : 0
+  };
+}
+
+/**
+ * NEW: Build series from CANDLE CLOSES (not currentWindow.raw)
+ * This ensures history matches the chart candles exactly.
+ */
+export interface BuildFromCandlesParams {
+  asOfISO: string;            // Anchor date ISO (YYYY-MM-DD or full ISO)
+  historyStartISO?: string;   // Override history start (default: FIXED_HISTORY_START_DATE)
+  candleCloses: Array<{ t: string; close: number }>;  // From market candles API
+  forecast: Array<{ t: string; value: number }>;      // Forecast from model
+}
+
+export function buildFullSeriesFromCandles(params: BuildFromCandlesParams): BuildFullSeriesResult {
+  const {
+    asOfISO,
+    historyStartISO = FIXED_HISTORY_START_DATE,
+    candleCloses,
+    forecast,
+  } = params;
+  
+  const asOfDate = asOfISO.split('T')[0];
+  const historyStart = historyStartISO.split('T')[0];
+  
+  // 1) HISTORY: candles from historyStart to asOf (inclusive)
+  const history = candleCloses
+    .filter(c => {
+      const d = c.t.split('T')[0];
+      return d >= historyStart && d <= asOfDate;
+    })
+    .map(c => ({ t: c.t.split('T')[0], v: c.close }))
+    .sort((a, b) => a.t.localeCompare(b.t));
+  
+  // 2) ANCHOR: last point in history
+  const anchorIndex = history.length > 0 ? history.length - 1 : -1;
+  const anchorPrice = history.length > 0 ? history[history.length - 1].v : 0;
+  
+  // 3) FORECAST: strictly after asOf
+  const forecastPoints = forecast
+    .filter(f => {
+      const d = f.t.split('T')[0];
+      return d > asOfDate;
+    })
+    .map(f => ({ t: f.t.split('T')[0], v: f.value }))
+    .sort((a, b) => a.t.localeCompare(b.t));
+  
+  // Combine: [history] + [forecast]
+  // Note: anchor is last point of history, not duplicated
+  const series = [...history, ...forecastPoints];
+  
+  return {
+    series,
+    anchorIndex,
+    historyLength: history.length,
+    forecastLength: forecastPoints.length,
   };
 }
 
