@@ -1,0 +1,25 @@
+{
+  "timestamp": "2026-03-02T00:39:35.959200",
+  "total_tests": 14,
+  "passed_tests": 14,
+  "failed_tests": 0,
+  "success_rate": 100.0,
+  "passed_list": [
+    "Backend Health",
+    "BTC Focus-Pack 30d",
+    "SPX Focus-Pack 30d",
+    "DXY Terminal 30d",
+    "BTC Market Candles",
+    "SPX Market Candles",
+    "DXY Market Candles",
+    "BTC Prediction Snapshots",
+    "BTC Focus-Pack 7d",
+    "BTC Focus-Pack 14d",
+    "BTC Focus-Pack 90d",
+    "SPX Focus-Pack 7d",
+    "SPX Focus-Pack 14d",
+    "SPX Focus-Pack 90d"
+  ],
+  "failed_list": [],
+  "overall_success": true
+}
