@@ -78,7 +78,8 @@ const CONFIG = {
   SERIES_DELTA_THRESHOLD: 0.0035,      // 0.35% price change triggers save
   HEARTBEAT_HOURS: 24,                 // Fallback save interval
   MIN_SERIES_POINTS: 5,                // Minimum points to save
-  RATE_LIMIT_MINUTES: 15,              // Max 1 save per 15 min per key
+  RATE_LIMIT_MINUTES: 0,               // Disabled for initial generation (was 15)
+  RATE_LIMIT_REPEAT_MINUTES: 15,       // Rate limit only for repeat saves
 };
 
 // ═══════════════════════════════════════════════════════════════
