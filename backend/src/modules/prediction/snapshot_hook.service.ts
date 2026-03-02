@@ -19,6 +19,12 @@
 
 import { MongoClient, Db, Collection } from 'mongodb';
 import crypto from 'crypto';
+import { 
+  buildFullSeries, 
+  timestampsToDateStrings, 
+  generateDateArray,
+  type SeriesPoint 
+} from '../../shared/utils/buildFullSeries.js';
 
 // ═══════════════════════════════════════════════════════════════
 // TYPES
